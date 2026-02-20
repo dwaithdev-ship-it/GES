@@ -1867,6 +1867,14 @@
             box-shadow: 0 4px 10px rgba(234, 67, 53, 0.2);
         }
 
+        .modal-btn-save:disabled,
+        .btn-save-settings:disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            filter: grayscale(0.2);
+        }
+
+
         /* Purpose Editor Styles */
         .purpose-modal-card {
             background: #fff;
@@ -2448,7 +2456,7 @@
             style="display: flex; justify-content: space-between; align-items: center; min-height: 45px;">
             <!-- Left Branding (Shown only in Profile/Dashboard) -->
             <div id="topLogo" style="display: none;">
-                <a href="#" class="tab-link" data-tab="dashboard">
+                <a href="#" class="tab-link" data-tab="home">
                     <img src="ges_logo.png" alt="GES Logo" style="height: 42px;">
                 </a>
             </div>
@@ -2458,20 +2466,20 @@
 
                 <!-- PUBLIC UTILITIES (Numbers, etc. - Hidden in Profile) -->
                 <div id="publicUtils" style="display: flex; align-items: center; gap: 15px;">
-                    <a href="tel:7670800000" class="util-link"><i class="fas fa-phone-alt"></i> 7670 800 000</a>
-                    <a href="https://wa.me/918802219999" class="util-link green"><i class="fab fa-whatsapp"></i> +91 880
-                        221 9999</a>
+                    <a href="tel:+918179792568" class="util-link"><i class="fas fa-phone-alt"></i> +91 8179792568</a>
+                    <a href="https://wa.me/918179792568" class="util-link green" target="_blank"><i
+                            class="fab fa-whatsapp"></i> +91 8179792568</a>
                     <span class="util-separator"></span>
                     <div id="authLinks" style="display: flex; align-items: center; gap: 15px;">
                         <a href="#" id="signupBtn" class="util-link fw-bold">Signup</a>
                         <a href="#" id="loginBtn" class="util-link fw-bold">Login</a>
                     </div>
-                    <a href="#" class="util-link fw-bold">Contact Us</a>
+                    <a href="#" id="contactUsLink" class="util-link fw-bold">Contact Us</a>
                 </div>
 
                 <!-- MEMBER UTILITIES (Home link, Icons - Shown only in Profile) -->
                 <div id="memberUtils" style="display: none; align-items: center; gap: 20px;">
-                    <a href="#" class="tab-link util-link" data-tab="dashboard" style="font-weight: 500;">Home</a>
+                    <a href="#" class="tab-link util-link" data-tab="home" style="font-weight: 500;">Home</a>
                 </div>
 
                 <!-- Shared User Profile -->
@@ -2493,7 +2501,6 @@
                         </div>
                         <button class="pd-btn-profile tab-link" data-tab="profile">My Profile</button>
                         <div class="pd-links">
-                            <a href="#" class="pd-link-item tab-link" data-tab="dashboard">My Dashboard</a>
                             <a href="#" class="pd-link-item tab-link" data-tab="settings">Settings & Privacy</a>
                             <a href="#" class="pd-link-item logout" id="pdLogout">Logout</a>
                         </div>
@@ -2522,7 +2529,6 @@
                     <li><a href="#" class="tab-link nav-item-coaching" data-tab="coaching">Coaching</a></li>
                     <li><a href="#" class="tab-link nav-item-refer" data-tab="refer">Refer</a></li>
                     <li><a href="#" class="tab-link nav-item-jobsite" data-tab="jobsite">Jobsite</a></li>
-                    <li><a href="#" class="tab-link nav-item-global" data-tab="ges-magazine">GES Magazine</a></li>
                     <li><a href="#" class="nav-search"><i class="fas fa-search"></i></a></li>
                 </ul>
             </nav>
@@ -2833,7 +2839,9 @@
                     <h2 class="band-title">Why choose GES?</h2>
                     <p class="band-text">INDIA'S NO. 1 OVERSEAS CAREER & IMMIGRATION CONSULTANT.</p>
                     <div class="band-links">
-                        <button class="btn btn-red">Call Us</button> <button class="btn btn-red">WhatsApp</button>
+                        <a href="tel:+918179792568" class="btn btn-red" style="text-decoration:none;">Call Us</a> <a
+                            href="https://wa.me/918179792568" target="_blank" class="btn btn-red"
+                            style="text-decoration:none;">WhatsApp</a>
                     </div>
                 </div>
             </div>
@@ -4805,13 +4813,52 @@
                         style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
                         <p style="color: #fff; font-size: 1.1rem; margin-bottom: 30px;">Access premium international job
                             markets and showcase your profile to global recruiters.</p>
-                        <div style="display: flex; gap: 20px;">
-                            <button class="btn btn-red-hero" onclick="openModal()"
-                                style="margin: 0; padding: 20px 50px;">Find Global Jobs</button>
-                            <button class="btn-white-outline" onclick="openModal()">Post Your Resume</button>
+                        <div id="jobHeroActions">
+                            <div id="jobInitialActions" style="display: flex; gap: 20px;">
+                                <button class="btn btn-red-hero" id="triggerJobSearch"
+                                    style="margin: 0; padding: 20px 50px;">Find Global Jobs</button>
+                                <button class="btn-white-outline" onclick="triggerResumeUpload()">Post Your
+                                    Resume</button>
+                            </div>
+
+                            <div id="jobSearchActions"
+                                style="display: none; background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); margin-top: 20px;">
+                                <form id="jobSearchForm"
+                                    style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 20px; align-items: end;">
+                                    <div class="form-group">
+                                        <label
+                                            style="display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 0.9rem;">Job
+                                            Title or Keywords</label>
+                                        <input type="text" id="jobKeywords" placeholder="Enter role"
+                                            style="width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; outline: none; font-size: 0.95rem;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label
+                                            style="display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 0.9rem;">Location
+                                        </label>
+                                        <input type="text" id="jobLocation" placeholder="Enter country"
+                                            style="width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; outline: none; font-size: 0.95rem;">
+                                    </div>
+                                    <button type="submit" class="btn btn-red-hero"
+                                        style="margin: 0; padding: 0 30px; height: 48px; min-width: 150px;">Search
+                                        Jobs</button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Search Results Section -->
+        <section class="container" id="jobResultsContainer" style="display: none; padding: 60px 0;">
+            <div id="jobLoading" style="display: none; text-align: center; margin-bottom: 50px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #ea4335;"></i>
+                <p style="margin-top: 15px; color: #666;">Fetching global opportunities...</p>
+            </div>
+            <div id="jobResults"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px;">
+                <!-- Jobs will be injected here -->
             </div>
         </section>
 
@@ -4826,8 +4873,10 @@
                     <p style="color: #666; font-size: 1.1rem; line-height: 1.6; margin-bottom: 30px;">Unlock global
                         opportunities with GES JOBS! Post your resume now to gain access into premium international job
                         markets and get noticed by top employers.</p>
-                    <button class="btn btn-red-hero" onclick="openModal()">Get Started &rarr;</button>
+                    <button class="btn btn-red-hero" onclick="triggerResumeUpload()">Get Started &rarr;</button>
                 </div>
+                <!-- Hidden Global Resume Input -->
+                <input type="file" id="globalResumeUpload" style="display: none;" accept=".pdf,.doc,.docx">
                 <div
                     style="background: #fff; padding: 50px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); border-top: 6px solid #6a1b9a;">
                     <div style="font-size: 3rem; color: #6a1b9a; margin-bottom: 25px;"><i class="fas fa-bolt"></i></div>
@@ -4835,7 +4884,8 @@
                     <p style="color: #666; font-size: 1.1rem; line-height: 1.6; margin-bottom: 30px;">Just zap it to
                         fast track your job search! Resume Zapper ensures fast and effective resume delivery to premier
                         companies worldwide, putting you ahead of the competition.</p>
-                    <button class="btn btn-red-hero" onclick="openModal()" style="background: #6a1b9a;">Zap Resume 现在
+                    <button class="btn btn-red-hero" onclick="triggerResumeUpload()" style="background: #6a1b9a;">Zap
+                        Resume 现在
                         &rarr;</button>
                 </div>
             </div>
@@ -4919,127 +4969,8 @@
                 resources to help you bridge the gap independently.</p>
         </section>
     </div>
-    <div id="ges-magazine-view" class="tab-content">
-        <!-- Magazine Hero -->
-        <section class="migrate-hero" style="background: linear-gradient(135deg, #1a1a1a, #333); padding: 120px 0;">
-            <div class="container" style="display: flex; align-items: center; gap: 80px;">
-                <div style="flex: 1;">
-                    <span
-                        style="background: #ea4335; color: #fff; padding: 5px 15px; border-radius: 5px; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px;">Featured
-                        Issue</span>
-                    <h1 style="font-size: 3.5rem; color: #fff; margin: 20px 0; font-weight: 900; line-height: 1.1;">GES
-                        Global Perspectives</h1>
-                    <p style="color: #aaa; font-size: 1.2rem; line-height: 1.7; margin-bottom: 40px;">The definitive
-                        guide for global Indians seeking high-growth opportunities, luxury lifestyles, and cross-border
-                        success.</p>
-                    <div style="display: flex; gap: 20px;">
-                        <button class="btn btn-red-hero" onclick="openModal()" style="padding: 18px 40px;">Apply for
-                            Subscription</button>
-                        <button
-                            style="background: transparent; border: 2px solid #555; color: #fff; padding: 18px 40px; border-radius: 50px; font-weight: 700; cursor: pointer;">Read
-                            Latest Online</button>
-                    </div>
-                </div>
-                <div style="flex: 0.8;">
-                    <div
-                        style="background: #252525; border: 1px solid #444; border-radius: 30px; height: 500px; position: relative; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.5);">
-                        <div
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.8));">
-                        </div>
-                        <div style="position: absolute; bottom: 40px; left: 40px; right: 40px;">
-                            <h2 style="color: #fff; font-size: 2rem; margin-bottom: 10px;">The 2026 Global Mobility
-                                Report</h2>
-                            <p style="color: #ccc; font-size: 0.9rem;">How the new immigration policies in G7 nations
-                                are reshaping the Indian diaspora.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Trending Articles -->
-        <section class="container" style="padding: 100px 0;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 60px;">
-                <h2 class="section-title-migrate" style="margin: 0;">Trending Stories</h2>
-                <a href="#" style="color: #6a1b9a; font-weight: 700; text-decoration: none;">View All Articles
-                    &rarr;</a>
-            </div>
-            <div class="m-opportunity-grid">
-                <div class="m-opp-card" style="padding: 0; overflow: hidden; border: none;">
-                    <div style="height: 200px; background: #eee;"></div>
-                    <div style="padding: 30px;">
-                        <span style="color: #ea4335; font-weight: 800; font-size: 0.8rem;">LIFESTYLE</span>
-                        <h4 style="margin: 10px 0 15px; line-height: 1.4;">Settling in Dubai: A Luxury Guide for
-                            Entrepreneurs</h4>
-                        <p style="font-size: 0.85rem; color: #777;">From Silver Visas to Golden Visas, here is
-                            everything you need to know about the UAE's boom.</p>
-                    </div>
-                </div>
-                <div class="m-opp-card" style="padding: 0; overflow: hidden; border: none;">
-                    <div style="height: 200px; background: #ddd;"></div>
-                    <div style="padding: 30px;">
-                        <span style="color: #6a1b9a; font-weight: 800; font-size: 0.8rem;">CAREER</span>
-                        <h4 style="margin: 10px 0 15px; line-height: 1.4;">Tech Hubs 2026: Why Germany is the New
-                            Silicon Valley</h4>
-                        <p style="font-size: 0.85rem; color: #777;">Exploring the Opportunity Card and its impact on the
-                            European tech ecosystem.</p>
-                    </div>
-                </div>
-                <div class="m-opp-card" style="padding: 0; overflow: hidden; border: none;">
-                    <div style="height: 200px; background: #eee;"></div>
-                    <div style="padding: 30px;">
-                        <span style="color: #ea4335; font-weight: 800; font-size: 0.8rem;">SUCCESS</span>
-                        <h4 style="margin: 10px 0 15px; line-height: 1.4;">From Students to CEOs: The Success of Indians
-                            in Canada</h4>
-                        <p style="font-size: 0.85rem; color: #777;">Celebrating the achievement of the diaspora in the
-                            Great White North.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Success Stories Map Section -->
-        <section style="background: #111; padding: 100px 0; color: #fff;">
-            <div class="container" style="text-align: center;">
-                <h2 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 20px;">The Global Indian Network</h2>
-                <p style="color: #888; margin-bottom: 60px;">Connecting 18 million success stories across 190 countries.
-                </p>
-
-                <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap;">
-                    <div
-                        style="background: #222; padding: 40px; border-radius: 20px; min-width: 250px; border: 1px solid #333;">
-                        <h3 style="font-size: 2.5rem; color: #ea4335;">500+</h3>
-                        <p style="font-size: 0.9rem; opacity: 0.7;">Weekly Expert Insights</p>
-                    </div>
-                    <div
-                        style="background: #222; padding: 40px; border-radius: 20px; min-width: 250px; border: 1px solid #333;">
-                        <h3 style="font-size: 2.5rem; color: #6a1b9a;">1M+</h3>
-                        <p style="font-size: 0.9rem; opacity: 0.7;">Digital Readers</p>
-                    </div>
-                    <div
-                        style="background: #222; padding: 40px; border-radius: 20px; min-width: 250px; border: 1px solid #333;">
-                        <h3 style="font-size: 2.5rem; color: #ea4335;">120+</h3>
-                        <p style="font-size: 0.9rem; opacity: 0.7;">Global Correspondents</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Newsletter CTA -->
-        <section class="container" style="padding: 100px 0;">
-            <div
-                style="background: #fdfdfd; border: 1px solid #eee; border-radius: 30px; padding: 80px; text-align: center;">
-                <h2 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 20px;">Join the Elite Circle</h2>
-                <p style="font-size: 1.2rem; color: #666; margin-bottom: 40px;">Get exclusive monthly magazine delivered
-                    to your inbox and doorstep.</p>
-                <div style="max-width: 600px; margin: 0 auto; display: flex; gap: 10px;">
-                    <input type="email" placeholder="Professional E-mail"
-                        style="flex: 1; padding: 20px; border: 1px solid #ddd; border-radius: 10px; font-size: 1rem;">
-                    <button class="btn btn-red-hero" style="margin: 0; padding: 0 40px;">Apply to GES Magazine</button>
-                </div>
-            </div>
-        </section>
     </div>
+    <!-- GES Magazine view removed -->
 
     <div id="profile-view" class="tab-content">
         <div class="profile-container">
@@ -5050,27 +4981,25 @@
                     <div class="sidebar-name" id="sideName">Kalyan Dev</div>
                 </div>
                 <div class="sidebar-actions">
-                    <button class="btn-upload-photo">Upload Profile Photo</button>
-                    <div style="font-size: 0.75rem; color: #888; margin-top: 10px;">
-                        Get access to exclusive tools and enjoy premium benefits. <a href="#"
-                            style="color: #ea4335; font-weight: 700;">Try Premium</a>
-                    </div>
+                    <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+                    <button class="btn-upload-photo"
+                        onclick="document.getElementById('profilePhotoInput').click()">Upload Profile Photo</button>
                 </div>
                 <nav class="sidebar-nav">
-                    <a href="#" class="sidebar-nav-item active">Identity & Contact <i
+                    <a href="#" class="sidebar-nav-item tab-link active" data-tab="profile"
+                        id="sideNavIdentity">Identity & Contact <i class="fas fa-chevron-right"></i></a>
+                    <a href="#" class="sidebar-nav-item" id="sideNavEducation">Education <i
                             class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Education <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Work Experience <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Skills <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Licenses & Certifications <i
+                    <a href="#" class="sidebar-nav-item" id="sideNavWork">Work Experience <i
                             class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Tests <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Languages Known <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Global Exposure <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Visa History <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Project Details <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">References <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Bank Details <i class="fas fa-chevron-right"></i></a>
+                    <a href="#" class="sidebar-nav-item" id="sideNavSkills">Skills <i
+                            class="fas fa-chevron-right"></i></a>
+                    <a href="#" class="sidebar-nav-item" id="sideNavTests">Tests <i
+                            class="fas fa-chevron-right"></i></a>
+                    <a href="#" class="sidebar-nav-item" id="sideNavLanguages">Languages Known <i
+                            class="fas fa-chevron-right"></i></a>
+                    <a href="#" class="sidebar-nav-item" id="sideNavVisa">Visa History <i
+                            class="fas fa-chevron-right"></i></a>
                 </nav>
             </aside>
 
@@ -5082,18 +5011,28 @@
                         <h1 class="profile-title">My Profile</h1>
                         <p style="font-size: 0.85rem; color: #666;">Complete your profile to get updated feedback</p>
                     </div>
-                    <button class="btn-submit-profile">Submit</button>
+
                 </div>
 
                 <!-- Autofill Banner -->
-                <div
+                <div id="resumeBanner"
                     style="background: #fff; border: 1px solid #eee; padding: 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
+                    <div id="resumePromptText">
                         <h4 style="font-size: 0.95rem; margin-bottom: 5px;">Autofill most of your profile details</h4>
                         <p style="font-size: 0.8rem; color: #888;">Save time by uploading your resume. (Any DOC, DOCX,
                             PDF file with max size of 5MB)</p>
                     </div>
-                    <button
+                    <div id="resumeStatusDisplay" style="display: none; align-items: center; gap: 15px;">
+                        <i class="fas fa-file-pdf" style="font-size: 1.5rem; color: #ea4335;"></i>
+                        <div style="flex: 1;">
+                            <h4 id="uploadedFileName" style="font-size: 0.95rem; margin-bottom: 2px;">resume.pdf</h4>
+                            <p style="font-size: 0.75rem; color: #888;">Ready for autofill</p>
+                        </div>
+                        <button onclick="removeResume()"
+                            style="background: none; border: none; color: #888; cursor: pointer; font-size: 1.2rem;"><i
+                                class="fas fa-times"></i></button>
+                    </div>
+                    <button id="uploadResumeBtn" onclick="triggerResumeUpload()"
                         style="padding: 8px 15px; border: 1px solid #ea4335; color: #ea4335; background: #fff; border-radius: 4px; font-weight: 700; cursor: pointer;">Upload
                         Resume</button>
                 </div>
@@ -5102,211 +5041,93 @@
                 <section class="profile-section">
                     <div class="section-header">
                         <h3 class="section-title">Identity</h3>
-                        <i class="fas fa-pen" style="color: #888; cursor: pointer; font-size: 0.8rem;"></i>
+                        <i class="fas fa-pen" id="triggerEditIdentity"
+                            style="color: #ea4335; cursor: pointer; font-size: 1rem;"></i>
                     </div>
                     <div class="identity-grid">
                         <div class="info-group">
                             <span class="info-label">Name</span>
-                            <span class="info-value" id="profileFullName">Kalyan Dev</span>
+                            <span class="info-value" id="profileFullName">...</span>
                         </div>
                         <div class="info-group">
                             <span class="info-label">Phone</span>
-                            <span class="info-value" id="profilePhone">+91XXXXXXXXXX</span>
+                            <span class="info-value" id="profilePhone">...</span>
                         </div>
                     </div>
                 </section>
 
-                <!-- Section Placeholders -->
+                <!-- Education Section -->
                 <section class="profile-section">
                     <div class="section-header">
                         <h3 class="section-title">Education</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
+                        <a href="#" class="btn-add" id="btnAddEducation"><i class="fas fa-plus-circle"></i> Add</a>
+                    </div>
+                    <div id="eduListContainer" class="profile-list-container">
+                        <!-- Education items will be rendered here -->
                     </div>
                 </section>
 
+                <!-- Work Experience Section -->
                 <section class="profile-section">
                     <div class="section-header">
                         <h3 class="section-title">Work Experience</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
+                        <a href="#" class="btn-add" id="btnAddWork"><i class="fas fa-plus-circle"></i> Add</a>
+                    </div>
+                    <div id="workListContainer" class="profile-list-container">
+                        <!-- Work items will be rendered here -->
                     </div>
                 </section>
 
+                <!-- Skills Section -->
                 <section class="profile-section">
                     <div class="section-header">
                         <h3 class="section-title">Skills</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
+                        <a href="#" class="btn-add" id="btnAddSkills"><i class="fas fa-plus-circle"></i> Add</a>
+                    </div>
+                    <div id="skillsListContainer" class="profile-list-container skill-tags">
+                        <!-- Skills will be rendered here -->
                     </div>
                 </section>
 
-                <section class="profile-section">
-                    <div class="section-header">
-                        <h3 class="section-title">Licenses & Certifications</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
-                    </div>
-                </section>
-
+                <!-- Tests Section -->
                 <section class="profile-section">
                     <div class="section-header">
                         <h3 class="section-title">Tests</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
+                        <a href="#" class="btn-add" id="btnAddTests"><i class="fas fa-plus-circle"></i> Add</a>
+                    </div>
+                    <div id="testsListContainer" class="profile-list-container">
+                        <!-- Test items will be rendered here -->
                     </div>
                 </section>
 
+                <!-- Languages Known Section -->
                 <section class="profile-section">
                     <div class="section-header">
                         <h3 class="section-title">Languages Known</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
+                        <a href="#" class="btn-add" id="btnAddLanguages"><i class="fas fa-plus-circle"></i> Add</a>
+                    </div>
+                    <div id="languagesListContainer" class="profile-list-container">
+                        <!-- Language items will be rendered here -->
                     </div>
                 </section>
 
-                <section class="profile-section">
-                    <div class="section-header">
-                        <h3 class="section-title">Global Exposure</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
-                    </div>
-                </section>
-
+                <!-- Visa History Section -->
                 <section class="profile-section">
                     <div class="section-header">
                         <h3 class="section-title">Visa History</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
+                        <a href="#" class="btn-add" id="btnAddVisa"><i class="fas fa-plus-circle"></i> Add</a>
+                    </div>
+                    <div id="visaListContainer" class="profile-list-container">
+                        <!-- Visa items will be rendered here -->
                     </div>
                 </section>
 
-                <section class="profile-section">
-                    <div class="section-header">
-                        <h3 class="section-title">Projects</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
-                    </div>
-                </section>
-
-                <section class="profile-section">
-                    <div class="section-header">
-                        <h3 class="section-title">References</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
-                    </div>
-                </section>
-
-                <section class="profile-section">
-                    <div class="section-header">
-                        <h3 class="section-title">Bank Details</h3>
-                        <a href="#" class="btn-add"><i class="fas fa-plus-circle"></i> Add</a>
-                    </div>
-                </section>
             </main>
         </div>
     </div>
 
-    <div id="dashboard-view" class="tab-content">
-        <div class="dashboard-container">
-            <!-- Sidebar -->
-            <aside class="profile-sidebar dashboard-sidebar">
-                <div class="sidebar-header">
-                    <div class="sidebar-avatar" id="dashAvatar">GS</div>
-                    <div class="sidebar-name" id="dashName">Kalyan Dev</div>
-                </div>
-                <nav class="sidebar-nav">
-                    <a href="#" class="sidebar-nav-item tab-link" data-tab="dashboard">My Home <i
-                            class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item tab-link" data-tab="needs">My Needs & Preferences <i
-                            class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item tab-link" data-tab="resume">My Resume <i
-                            class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item tab-link" data-tab="profile">My Info <i
-                            class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item tab-link" data-tab="eligibility">Free Assessment <i
-                            class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Counseling & Evaluation <i
-                            class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">My Courses <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">Raise Dispute/ Complaint <i
-                            class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">My Referrals <i class="fas fa-chevron-right"></i></a>
-                    <a href="#" class="sidebar-nav-item">My Checklist <i class="fas fa-chevron-right"></i></a>
-                </nav>
-            </aside>
 
-            <!-- Main Content -->
-            <main class="dashboard-main">
-                <div class="dashboard-box start-box">
-                    <div>
-                        <h4 style="font-size: 1rem; margin-bottom: 5px; color: #333;">Let's Get Started</h4>
-                        <p style="font-size: 0.85rem; color: #666;">Complete your Registration</p>
-                    </div>
-                    <button class="btn-start-now">Start now &rarr;</button>
-                </div>
 
-                <div class="dashboard-box">
-                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px;">How it Works?</h3>
-                    <ul class="how-it-works-list">
-                        <li class="timeline-item">
-                            <div class="timeline-dot completed"><i class="fas fa-check"></i></div>
-                            <div class="timeline-content">Stage 1 : Register Yourself</div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">Stage 2 : Get a dedicated counselor</div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">Stage 3 : Get a personalized counseling</div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">Stage 4 : Choose a solution</div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">Stage 5 : Sign up with Y-Axis</div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">Stage 6 : Y-Axis begins your application process</div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">Stage 7 : Receive your customized checklist yourself</div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">Stage 8 : Provide information and documents</div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">Stage 9 : Y-Axis prepares and completes your application</div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">Stage 10 : Your Application is submitted</div>
-                        </li>
-                    </ul>
-                </div>
-            </main>
-
-            <!-- Right Sidebar -->
-            <aside class="dashboard-right">
-                <div class="support-card">
-                    <div class="support-header">
-                        <i class="fas fa-headset" style="font-size: 2rem;"></i>
-                        <div>
-                            <h4 style="font-size: 0.9rem; margin-bottom: 2px;">Need Help?</h4>
-                            <p style="font-size: 0.75rem; opacity: 0.8;">GES Counselor is here to Help you!</p>
-                        </div>
-                    </div>
-                    <div class="support-body">
-                        <a href="#" class="support-link">
-                            <span>Connect through WhatsApp</span>
-                            <i class="fab fa-whatsapp" style="color: #25d366;"></i>
-                        </a>
-                        <a href="#" class="support-link">
-                            <span>Connect through Call</span>
-                            <i class="fas fa-phone-alt" style="color: #ea4335;"></i>
-                        </a>
-                    </div>
-                </div>
-            </aside>
-        </div>
-    </div>
 
     <!-- Settings & Privacy View -->
     <div id="settings-view" class="tab-content">
@@ -5385,8 +5206,7 @@
                     <div class="sidebar-name set-name">Kalyan Dev</div>
                 </div>
                 <nav class="sidebar-nav">
-                    <a href="#" class="sidebar-nav-item tab-link" data-tab="dashboard">My Home <i
-                            class="fas fa-chevron-right"></i></a>
+
                     <a href="#" class="sidebar-nav-item tab-link active" data-tab="needs">My Needs & Preferences <i
                             class="fas fa-chevron-right"></i></a>
                     <a href="#" class="sidebar-nav-item tab-link" data-tab="resume">My Resume <i
@@ -5456,8 +5276,7 @@
                     <div class="sidebar-name set-name">Kalyan Dev</div>
                 </div>
                 <nav class="sidebar-nav">
-                    <a href="#" class="sidebar-nav-item tab-link" data-tab="dashboard">My Home <i
-                            class="fas fa-chevron-right"></i></a>
+
                     <a href="#" class="sidebar-nav-item tab-link" data-tab="needs">My Needs & Preferences <i
                             class="fas fa-chevron-right"></i></a>
                     <a href="#" class="sidebar-nav-item tab-link active" data-tab="resume">My Resume <i
@@ -5475,7 +5294,6 @@
                         <h1 class="profile-title">My Resume</h1>
                         <p style="font-size: 0.85rem; color: #666;">Complete your profile to get updated feedback</p>
                     </div>
-                    <button class="btn-submit-profile" style="background: #8e9aaf;">Save</button>
                 </div>
 
                 <div style="display: flex; gap: 30px; border-bottom: 1px solid #eee; margin-bottom: 30px;">
@@ -5488,12 +5306,14 @@
                 <div class="profile-section" style="border: 1px solid #ea4335;">
                     <div class="form-group" style="margin-bottom: 30px;">
                         <div style="display: flex; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
-                            <input type="text" placeholder="Select Resume"
+                            <input type="text" id="resumeDisplay" placeholder="Select Resume"
                                 style="flex: 1; border: none; padding: 12px; background: #fff;" readonly>
-                            <label
+                            <button id="removeResumeBtnTab" onclick="removeResume()"
+                                style="display: none; background: #fff; border: none; color: #ea4335; padding: 0 15px; cursor: pointer;"><i
+                                    class="fas fa-trash-alt"></i></button>
+                            <label onclick="triggerResumeUpload()"
                                 style="background: #fff; border-left: 1px solid #ea4335; color: #ea4335; padding: 12px 30px; cursor: pointer; font-weight: 700;">
                                 Browse
-                                <input type="file" style="display: none;">
                             </label>
                         </div>
                         <p style="font-size: 0.75rem; color: #888; margin-top: 10px;">Save time by uploading your
@@ -5502,14 +5322,14 @@
 
                     <div class="form-group">
                         <label
-                            style="font-size: 0.85rem; font-weight: 700; color: #333; margin-bottom: 10px; display: block;">LinkedIn
+                            style="font-size: 0.85rem; font-weight: 700; color: #333; margin-bottom: 10px; display: block;">Facebook
                             Public Profile <span
                                 style="font-weight: 400; color: #888; font-size: 0.75rem;">Optional</span></label>
                         <div style="display: flex; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
-                            <input type="text" placeholder="LinkedIn URL"
+                            <input type="text" placeholder="Facebook URL"
                                 style="flex: 1; border: none; padding: 12px; background: #fff;">
                             <button
-                                style="background: #fff; border-left: 1px solid #004a99; color: #004a99; padding: 12px 30px; cursor: pointer; font-weight: 700; border-top: none; border-bottom: none; border-right: none;">Validate</button>
+                                style="background: #fff; border-left: 1px solid #1877f2; color: #1877f2; padding: 12px 30px; cursor: pointer; font-weight: 700; border-top: none; border-bottom: none; border-right: none;">Validate</button>
                         </div>
                     </div>
                 </div>
@@ -5525,8 +5345,7 @@
                     <div class="sidebar-name set-name">Kalyan Dev</div>
                 </div>
                 <nav class="sidebar-nav">
-                    <a href="#" class="sidebar-nav-item tab-link" data-tab="dashboard">My Home <i
-                            class="fas fa-chevron-right"></i></a>
+
                     <a href="#" class="sidebar-nav-item tab-link" data-tab="needs">My Needs & Preferences <i
                             class="fas fa-chevron-right"></i></a>
                     <a href="#" class="sidebar-nav-item tab-link" data-tab="resume">My Resume <i
@@ -5603,7 +5422,7 @@
     </div>
 
     <!-- Footer -->
-    <footer>
+    <footer id="siteFooter">
         <div class="container footer-grid">
             <div class="footer-logo-col">
                 <img src="ges_logo.png" alt="GES Logo" class="footer-logo">
@@ -5621,7 +5440,7 @@
             </div>
             <div class="footer-contact-col">
                 <h3>Strategic Engagement</h3>
-                <p><i class="fas fa-headset"></i> 1800 120 1200</p>
+                <p><i class="fas fa-headset"></i> +91 8179792568</p>
                 <div class="social-links">
                     <i class="fab fa-facebook-f"></i>
                     <i class="fab fa-linkedin-in"></i>
@@ -5643,7 +5462,7 @@
             <h2 class="modal-title">Sign Up</h2>
 
             <div class="social-login-group">
-                <button class="social-btn linkedin"><i class="fab fa-linkedin"></i></button>
+                <button class="social-btn facebook"><i class="fab fa-facebook-f"></i></button>
                 <button class="social-btn google"><img
                         src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png"
                         alt="Google Access Token"></button>
@@ -5685,6 +5504,10 @@
                 </div>
 
                 <button type="submit" class="btn btn-submit-red">Sign Up</button>
+                <p style="text-align:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgotPassword2"
+                        style="color:#ea4335;text-decoration:none;">Forgot Password?</a></p>
+                <p style="text-align:center;margin-top:5px;font-size:0.9rem;">Already have an account? <a href="#"
+                        id="switchToLogin" style="color:#ea4335;font-weight:700;text-decoration:none;">Sign In</a></p>
             </form>
         </div>
     </div>
@@ -5696,7 +5519,7 @@
             <h2 class="modal-title">Login</h2>
 
             <div class="social-login-group">
-                <button class="social-btn linkedin"><i class="fab fa-linkedin"></i></button>
+                <button class="social-btn facebook"><i class="fab fa-facebook-f"></i></button>
                 <button class="social-btn google"><img
                         src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png"
                         alt="Google Token"></button>
@@ -5725,8 +5548,47 @@
         </div>
     </div>
 
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal-overlay">
+        <div class="modal-card">
+            <button class="modal-close" onclick="closeProfileModal('forgotPasswordModal')">&times;</button>
+            <h2 class="modal-title">Reset Password</h2>
 
-    <!-- Logout Confirmation Modal -->
+            <!-- Step 1: Verify Phone -->
+            <div id="fpStep1">
+                <p style="margin-bottom: 20px; font-size: 0.9rem; color: #666;">Enter your registered mobile number to
+                    reset your password.</p>
+                <div class="form-row phone-group">
+                    <select id="fp_country_code" class="country-code">
+                        <option value="+91">IND +91</option>
+                        <option value="+1">USA +1</option>
+                    </select>
+                    <input type="tel" id="fp_phone" placeholder="Mobile Number" required>
+                </div>
+                <button type="button" id="btnVerifyPhone" class="btn btn-submit-red" style="margin-top: 15px;">Verify
+                    Mobile</button>
+            </div>
+
+            <!-- Step 2: New Password -->
+            <div id="fpStep2" style="display: none;">
+                <p style="margin-bottom: 20px; font-size: 0.9rem; color: #666;">Mobile verified! You can now set a new
+                    password.</p>
+                <div class="form-row">
+                    <input type="password" id="fp_new_password" placeholder="New Access Key (Min 6 chars)" required
+                        minlength="6">
+                </div>
+                <div class="form-row">
+                    <input type="password" id="fp_confirm_password" placeholder="Confirm New Access Key" required>
+                </div>
+                <button type="button" id="btnResetPassword" class="btn btn-submit-red" style="margin-top: 15px;">Update
+                    Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SDKs -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
     <div id="logoutModal" class="modal-overlay">
         <div class="modal-card" style="max-width: 600px; text-align: center; padding: 50px 40px;">
             <button class="modal-close" id="closeLogoutModal">&times;</button>
@@ -5921,6 +5783,534 @@
             <!-- Footer -->
             <div style="overflow: hidden; margin-top: 20px; border-top: 1px solid #eee; padding-top: 25px;">
                 <button class="btn-continue-step" id="savePurposeBtn">Continue</button>
+            </div>
+        </div>
+    </div>
+    <!-- Education Modal -->
+    <div id="modalEducation" class="profile-modal-overlay">
+        <div class="profile-modal-content">
+            <div class="profile-modal-header">
+                <h2>Add Education</h2>
+                <button class="profile-modal-close" onclick="closeProfileModal('modalEducation')">&times;</button>
+            </div>
+            <div class="profile-modal-body">
+                <div class="modal-grid">
+                    <div class="modal-form-group">
+                        <label>Which Institution did you study in?</label>
+                        <input type="text" id="edu_institution" placeholder="Ex: Boston University">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What was the field of study?</label>
+                        <input type="text" id="edu_field" placeholder="Ex: Electronics">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What level of education did you study?</label>
+                        <select id="edu_level">
+                            <option value="">Select Level</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>And the name of your degree / course?</label>
+                        <input type="text" id="edu_degree" placeholder="Ex: Bachelor in Engineering">
+                    </div>
+                </div>
+
+                <div class="modal-form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                    <input type="checkbox" id="edu_is_highest" style="width: 18px; height: 18px;">
+                    <label for="edu_is_highest" style="margin-bottom: 0;">This is my highest level of education</label>
+                </div>
+
+                <div class="modal-grid" style="margin-top: 20px;">
+                    <div class="modal-form-group">
+                        <label>Where is it located?</label>
+                        <select id="edu_country">
+                            <option value="">Select Country</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>When did you start?</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="edu_start_month" style="flex: 1;">
+                                <option value="">Month</option>
+                            </select>
+                            <select id="edu_start_year" style="flex: 1;">
+                                <option value="">Year</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Date of attendance to (or expected graduation)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="edu_end_month" style="flex: 1;">
+                                <option value="">Month</option>
+                            </select>
+                            <select id="edu_end_year" style="flex: 1;">
+                                <option value="">Year</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is the type of course?</label>
+                        <select id="edu_course_type">
+                            <option value="">Type of Course</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>And your mode of study? <span class="optional-tag">Optional</span></label>
+                        <select id="edu_study_mode">
+                            <option value="">Please select</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-grid" style="margin-top: 20px;">
+                    <div class="modal-form-group">
+                        <label>What was the medium of education? <span class="optional-tag">Optional</span></label>
+                        <select id="edu_medium">
+                            <option value="">Please select</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Division <span class="optional-tag">Optional</span></label>
+                        <select id="edu_division">
+                            <option value="">Please select</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your score?</label>
+                        <div style="margin-bottom: 5px;">
+                            <label
+                                style="display: inline-flex; align-items: center; margin-right: 15px; font-weight: normal;">
+                                <input type="radio" name="edu_score_type" value="percentage" checked
+                                    style="margin-right: 5px;"> Percentage
+                            </label>
+                            <label style="display: inline-flex; align-items: center; font-weight: normal;">
+                                <input type="radio" name="edu_score_type" value="grade" style="margin-right: 5px;">
+                                Grade
+                            </label>
+                        </div>
+                        <select id="edu_score_value">
+                            <option value="">Select Percentage</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-form-group">
+                    <label>Would you like to share anything else? <span class="optional-tag">Optional</span></label>
+                    <textarea id="edu_additional"
+                        placeholder="Any other information relevant to your term in the institute"
+                        maxlength="80"></textarea>
+                    <div id="eduAddCharCount" style="text-align: right; color: #888; font-size: 0.75rem;">0/80</div>
+                </div>
+            </div>
+            <div class="profile-modal-footer">
+                <button class="modal-btn-cancel" onclick="closeProfileModal('modalEducation')">Cancel</button>
+                <button class="modal-btn-save" id="btnSaveEducation">Save</button>
+            </div>
+        </div>
+    </div>
+    <!-- Identity Modal -->
+    <div id="modalIdentity" class="profile-modal-overlay">
+        <div class="profile-modal-content">
+            <div class="profile-modal-header">
+                <h2>Identity</h2>
+                <button class="profile-modal-close" onclick="closeProfileModal('modalIdentity')">&times;</button>
+            </div>
+            <div class="profile-modal-body">
+                <div class="modal-grid">
+                    <div class="modal-form-group">
+                        <label>What is your First Name?</label>
+                        <input type="text" id="ident_first_name" placeholder="Kalyan">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>And your Last Name?</label>
+                        <input type="text" id="ident_last_name" placeholder="Dev">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Do you have a Middle Name? <span class="optional-tag">Optional</span></label>
+                        <input type="text" id="ident_middle_name" placeholder="Middle Name">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>When were you born?</label>
+                        <div class="date-input-wrapper">
+                            <input type="date" id="ident_dob">
+                            <i class="far fa-calendar-alt"></i>
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Which gender do you identify youself</label>
+                        <select id="ident_gender">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your Marital Status?</label>
+                        <select id="ident_marital_status">
+                            <option value="">Select Marital Status</option>
+                            <option value="Single">Single</option>
+                            <option value="Married">Married</option>
+                            <option value="Divorced">Divorced</option>
+                            <option value="Widowed">Widowed</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your Nationality?</label>
+                        <select id="ident_nationality">
+                            <option value="">Select Nationality</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your Phone Number?</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select class="ident-country-code" style="width: 70px;">
+                                <option value="91">91</option>
+                            </select>
+                            <input type="tel" id="ident_phone" placeholder="8179792568" style="flex: 1;">
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Alternate Phone Number <span class="optional-tag">Optional</span></label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select class="ident-country-code" style="width: 70px;">
+                                <option value="91">91</option>
+                            </select>
+                            <input type="tel" id="ident_alt_phone" placeholder="8179792568" style="flex: 1;">
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Where do we mail you?</label>
+                        <input type="email" id="ident_email" value="dwaith.devkalyan@gmail.com" readonly
+                            style="background: #f0f0f0; cursor: not-allowed;">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Preferred International Nickname? <span class="optional-tag">Optional</span></label>
+                        <input type="text" id="ident_nickname" placeholder="Nickname">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your current employment status?</label>
+                        <select id="ident_employment_status">
+                            <option value="">Select Employment Status</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your Skype ID.? <span class="optional-tag">Optional</span></label>
+                        <input type="text" id="ident_skype_id" placeholder="Skype ID">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your landline Phone No.? <span class="optional-tag">Optional</span></label>
+                        <input type="text" id="ident_landline" placeholder="What is your landline Phone No.?">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Want to add your Github Profile? <span class="optional-tag">Optional</span></label>
+                        <input type="text" id="ident_github_id" placeholder="Github ID">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Want to add your Facebook Profile? <span class="optional-tag">Optional</span></label>
+                        <input type="text" id="ident_linkedin_id" placeholder="Facebook URL">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your current location?</label>
+                        <select id="ident_location">
+                            <option value="">Country</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-modal-footer">
+                <button class="modal-btn-cancel" onclick="closeProfileModal('modalIdentity')">Cancel</button>
+                <button class="modal-btn-save" id="btnSaveIdentity">Save</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Work Experience Modal -->
+    <div id="modalWork" class="profile-modal-overlay">
+        <div class="profile-modal-content">
+            <div class="profile-modal-header">
+                <h2>Add Work Experience</h2>
+                <button class="profile-modal-close" onclick="closeProfileModal('modalWork')">&times;</button>
+            </div>
+            <div class="profile-modal-body">
+                <div class="modal-grid">
+                    <div class="modal-form-group">
+                        <label>Which company do you work in?</label>
+                        <input type="text" id="work_company" placeholder="Ex: Microsoft">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your Functional Area / Domain?</label>
+                        <input type="text" id="work_domain" placeholder="Ex: Design">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your role in the company?</label>
+                        <input type="text" id="work_role" placeholder="Ex: UX Designer">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Where is it located?</label>
+                        <select id="work_location">
+                            <option>Select Country</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="work_is_current" style="width: 18px; height: 18px;">
+                    <label for="work_is_current" style="margin-bottom: 0;">I am currently working in this
+                        role</label>
+                </div>
+                <div class="modal-grid">
+                    <div class="modal-form-group">
+                        <label>Start date</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="work_start_month" style="flex: 1;">
+                                <option>Month</option>
+                            </select>
+                            <select id="work_start_year" style="flex: 1;">
+                                <option>Year</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>End date</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="work_end_month" style="flex: 1;">
+                                <option>Month</option>
+                            </select>
+                            <select id="work_end_year" style="flex: 1;">
+                                <option>Year</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What type of employment do you serve?</label>
+                        <select id="work_employment_type">
+                            <option>Please select</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Which industry does the company cater to?</label>
+                        <select id="work_industry">
+                            <option>Please select</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Job responsibilities <span class="optional-tag">Optional</span></label>
+                        <textarea id="work_responsibilities" placeholder="Enter Job responsibilities"></textarea>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Key Achievements <span class="optional-tag">Optional</span></label>
+                        <textarea id="work_achievements" placeholder="Enter Key Achievements"></textarea>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Would you like to share anything else? <span class="optional-tag">Optional</span></label>
+                        <textarea id="work_additional"
+                            placeholder="Any other information relevant to your term in the company"
+                            maxlength="80"></textarea>
+                        <div id="workAddCharCount" style="text-align: right; color: #888; font-size: 0.75rem;">0/80
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-modal-footer">
+                <button class="modal-btn-cancel" onclick="closeProfileModal('modalWork')">Cancel</button>
+                <button class="modal-btn-save" id="btnSaveWork">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skills Modal -->
+    <div id="modalSkills" class="profile-modal-overlay">
+        <div class="profile-modal-content" style="max-width: 600px;">
+            <div class="profile-modal-header">
+                <h2>Add Skills</h2>
+                <button class="profile-modal-close" onclick="closeProfileModal('modalSkills')">&times;</button>
+            </div>
+            <div class="profile-modal-body">
+                <div class="modal-form-group">
+                    <label>What are your top skills?</label>
+                    <input type="text" id="skill_name_input" placeholder="Ex: Project Management"
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-top: 10px;">
+                    <div style="margin-top: 20px; border: 1px solid #eee; padding: 15px; border-radius: 8px;">
+                        <p style="font-size: 0.8rem; color: #666; margin-bottom: 15px;">Suggested based on your
+                            education and work experience</p>
+                        <div class="skill-tags">
+                            <span class="skill-tag suggested">UI Design <i class="fas fa-plus"
+                                    style="font-size: 0.7rem; margin-left: 5px; cursor: pointer;"></i></span>
+                            <span class="skill-tag suggested">User Experience Design <i class="fas fa-plus"
+                                    style="font-size: 0.7rem; margin-left: 5px; cursor: pointer;"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-modal-footer">
+                <button class="modal-btn-cancel" onclick="closeProfileModal('modalSkills')">Cancel</button>
+                <button class="modal-btn-save" id="btnSaveSkills">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tests Modal -->
+    <div id="modalTests" class="profile-modal-overlay">
+        <div class="profile-modal-content" style="max-width: 700px;">
+            <div class="profile-modal-header">
+                <h2>Add Tests</h2>
+                <button class="profile-modal-close" onclick="closeProfileModal('modalTests')">&times;</button>
+            </div>
+            <div class="profile-modal-body">
+                <div class="modal-grid">
+                    <div class="modal-form-group">
+                        <label>What is the name of the test taken?</label>
+                        <select id="test_name">
+                            <option>Ex.GRE</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>what was your overall score?</label>
+                        <input type="text" id="test_score" placeholder="Ex: 300">
+                    </div>
+                    <div class="modal-form-group">
+                        <label>When did you take the test?</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="test_taken_month" style="flex: 1;">
+                                <option>Month</option>
+                            </select>
+                            <select id="test_taken_year" style="flex: 1;">
+                                <option>Year</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Till when is this score valid? <span class="optional-tag">Optional</span></label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="test_valid_month" style="flex: 1;">
+                                <option>Month</option>
+                            </select>
+                            <select id="test_valid_year" style="flex: 1;">
+                                <option>Year</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-modal-footer">
+                <button class="modal-btn-cancel" onclick="closeProfileModal('modalTests')">Cancel</button>
+                <button class="modal-btn-save" id="btnSaveTests">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Languages Known Modal -->
+    <div id="modalLanguages" class="profile-modal-overlay">
+        <div class="profile-modal-content" style="max-width: 700px;">
+            <div class="profile-modal-header">
+                <h2>Add Language</h2>
+                <button class="profile-modal-close" onclick="closeProfileModal('modalLanguages')">&times;</button>
+            </div>
+            <div class="profile-modal-body">
+                <div class="modal-form-group">
+                    <label>What language do you know?</label>
+                    <select id="lang_name">
+                        <option>Select Language</option>
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label>What is your proficiency?</label>
+                    <div class="radio-group" style="flex-wrap: wrap;" id="lang_overall_prof">
+                        <label class="radio-option"><input type="radio" name="langProf" value="Native Speaker">
+                            Native
+                            Speaker</label>
+                        <label class="radio-option"><input type="radio" name="langProf" value="Proficient">
+                            Proficient</label>
+                        <label class="radio-option"><input type="radio" name="langProf" value="Advanced">
+                            Advanced</label>
+                        <label class="radio-option"><input type="radio" name="langProf" value="Intermediate">
+                            Intermediate</label>
+                        <label class="radio-option"><input type="radio" name="langProf" value="Beginner">
+                            Beginner</label>
+                    </div>
+                </div>
+                <div class="modal-grid">
+                    <div class="modal-form-group">
+                        <label>What is your Listening proficiency?</label>
+                        <select id="lang_listening">
+                            <option>Select Listening proficiency</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your Speaking proficiency?</label>
+                        <select id="lang_speaking">
+                            <option>Select Speaking proficiency</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your Reading proficiency?</label>
+                        <select id="lang_reading">
+                            <option>Select Reading proficiency</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>What is your Writing proficiency?</label>
+                        <select id="lang_writing">
+                            <option>Select Writing proficiency</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-modal-footer">
+                <button class="modal-btn-cancel" onclick="closeProfileModal('modalLanguages')">Cancel</button>
+                <button class="modal-btn-save" id="btnSaveLanguages" style="background: #ea4335;">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visa History Modal -->
+    <div id="modalVisa" class="profile-modal-overlay">
+        <div class="profile-modal-content" style="max-width: 700px;">
+            <div class="profile-modal-header">
+                <h2>Add Visa History</h2>
+                <button class="profile-modal-close" onclick="closeProfileModal('modalVisa')">&times;</button>
+            </div>
+            <div class="profile-modal-body">
+                <div class="modal-grid">
+                    <div class="modal-form-group">
+                        <label>Which type of visa are you holding?</label>
+                        <select id="visa_type">
+                            <option value="">Select Visa Type</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Which Country?</label>
+                        <select id="visa_country">
+                            <option value="">Select Country</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Visa Specification? <span class="optional-tag">Optional</span></label>
+                        <select id="visa_specification">
+                            <option value="">Select Specification</option>
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label>Your Visa is valid till?</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="visa_valid_date" style="flex: 1;">
+                                <option value="">Date</option>
+                            </select>
+                            <select id="visa_valid_month" style="flex: 1;">
+                                <option value="">Month</option>
+                            </select>
+                            <select id="visa_valid_year" style="flex: 1;">
+                                <option value="">Year</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-modal-footer">
+                <button class="modal-btn-cancel" onclick="closeProfileModal('modalVisa')">Cancel</button>
+                <button class="modal-btn-save" id="btnSaveVisa">Save</button>
             </div>
         </div>
     </div>

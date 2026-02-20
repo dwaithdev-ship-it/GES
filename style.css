@@ -812,8 +812,8 @@ footer {
     cursor: pointer;
 }
 
-.social-btn.linkedin {
-    color: #0077b5;
+.social-btn.facebook {
+    color: #1877F2;
     font-size: 2.3rem;
 }
 
@@ -1424,4 +1424,284 @@ input:checked+.toggle-slider:before {
     .comparison-table td {
         padding: 10px;
     }
+}
+
+/* --- Profile Detail Modals --- */
+.profile-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.profile-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.profile-modal-content {
+    background: #fff;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    border-radius: 8px;
+    position: relative;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.profile-modal-header {
+    padding: 20px 30px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.profile-modal-header h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #111;
+}
+
+.profile-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.profile-modal-close:hover {
+    color: #333;
+}
+
+.profile-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.profile-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    background: #fff;
+}
+
+.modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.modal-form-group {
+    margin-bottom: 20px;
+}
+
+.modal-form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 8px;
+}
+
+.modal-form-group input,
+.modal-form-group select,
+.modal-form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    color: #333;
+    background: #fff;
+}
+
+.modal-form-group textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+.optional-tag {
+    color: #888;
+    font-weight: 400;
+    font-size: 0.75rem;
+}
+
+.modal-btn-cancel {
+    padding: 10px 30px;
+    border: 1px solid #ea4335;
+    background: transparent;
+    color: #ea4335;
+    border-radius: 4px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.modal-btn-save {
+    padding: 10px 40px;
+    border: none;
+    background: #ea4335;
+    /* Brand Red */
+    opacity: 0.4;
+    /* Initially dimmed/opaque */
+    color: #fff;
+    border-radius: 4px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modal-btn-save.active {
+    opacity: 1;
+    /* Full opacity when active */
+    box-shadow: 0 4px 12px rgba(234, 67, 53, 0.3);
+}
+
+.modal-btn-save:hover.active {
+    background: #d32f2f;
+    transform: translateY(-1px);
+}
+
+.skill-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #f4f4f4;
+    border-radius: 20px;
+    padding: 5px 15px;
+    font-size: 0.85rem;
+    margin: 5px;
+    border: 1px solid #eee;
+}
+
+.skill-tag.suggested {
+    cursor: pointer;
+    background: #fff;
+    border: 1px solid #ddd;
+}
+
+.skill-tag.suggested:hover {
+    border-color: #ea4335;
+    color: #ea4335;
+}
+
+.date-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.date-input-wrapper input {
+    padding-right: 35px;
+}
+
+.date-input-wrapper i {
+    position: absolute;
+    right: 12px;
+    color: #888;
+    pointer-events: none;
+}
+
+.profile-list-container {
+    margin-top: 15px;
+}
+
+.profile-list-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    position: relative;
+    border: 1px solid #f0f0f0;
+}
+
+.profile-list-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.profile-list-item-title {
+    font-weight: 700;
+    color: #111;
+    font-size: 1rem;
+}
+
+.profile-list-item-subtitle {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.profile-list-item-meta {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.profile-list-item-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.btn-edit-item,
+.btn-delete-item {
+    cursor: pointer;
+    color: #888;
+    transition: color 0.2s;
+}
+
+.btn-edit-item:hover {
+    color: #ea4335;
+}
+
+.btn-delete-item:hover {
+    color: #111;
+}
+
+.skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 0;
+}
+
+.profile-skill-tag {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 50px;
+    padding: 6px 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-skill-tag i {
+    color: #888;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.profile-skill-tag i:hover {
+    color: #ea4335;
 }
