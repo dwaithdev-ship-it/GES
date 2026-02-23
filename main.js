@@ -1,5 +1,5 @@
-// Custom Backend Config - dynamically use the same host the page was loaded from
-const API_URL = 'http://192.168.29.122.nip.io:5000/api';
+// Custom Backend Config - Pointing to your local PC for Vercel access
+const API_URL = 'http://192.168.29.122:5000/api';
 
 const api = {
     async request(endpoint, method = 'GET', body = null, token = null) {
