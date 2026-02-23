@@ -8,3 +8,5 @@ build/
 .gemini/
 .brain/
 .checkpoint/
+server/serviceAccount.json
+server/.env

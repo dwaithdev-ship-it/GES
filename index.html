@@ -6315,6 +6315,26 @@
         </div>
     </div>
 
+    <!-- Job Details Modal -->
+    <div id="jobDetailsModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 800px; padding: 40px;">
+            <button class="modal-close" onclick="closeJobDetailsModal()">&times;</button>
+            <div id="jobDetailsContent">
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #ea4335;"></i>
+                    <p style="margin-top: 15px; color: #666;">Loading job details...</p>
+                </div>
+            </div>
+            <div
+                style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 15px;">
+                <button class="btn-job-details" onclick="closeJobDetailsModal()"
+                    style="background: #fff; border: 1px solid #ddd;">Close</button>
+                <button class="btn btn-red-hero" id="modalApplyBtn" style="margin: 0; padding: 12px 30px;">Apply
+                    Now</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";

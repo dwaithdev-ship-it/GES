@@ -1,10 +1,10 @@
+require('dotenv').config(); // MUST be first before any other imports
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const db = require('./db');
-require('dotenv').config();
 
 const app = express();
 app.use(cors());
@@ -21,6 +21,7 @@ const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const JOOBLE_API_KEY = process.env.JOOBLE_API_KEY;
 
 // Helper to send Telegram notification
 const sendTelegramNotification = async (message) => {
@@ -29,13 +30,15 @@ const sendTelegramNotification = async (message) => {
         return;
     }
     try {
-        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        console.log(`📡 Sending Telegram message to chat ${TELEGRAM_CHAT_ID}...`);
+        const response = await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             chat_id: TELEGRAM_CHAT_ID,
             text: message,
             parse_mode: 'HTML'
-        });
+        }, { timeout: 10000 });
+        console.log("✅ Telegram API response:", response.status, response.statusText);
     } catch (err) {
-        console.error("Telegram Error:", err.message);
+        console.error("Telegram Error:", err.response ? err.response.data : err.message);
     }
 };
 
@@ -182,11 +185,40 @@ app.post('/api/auth/reset-password-phone', async (req, res) => {
 
 // Google Login/Signup
 app.post('/api/auth/google', async (req, res) => {
-    const { idToken } = req.body;
+    const { idToken, accessToken } = req.body;
     try {
-        const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
-        const { sub: googleId, email, given_name: firstName, family_name: lastName } = response.data;
-        console.log(`[Google Login] Email: ${email}, GoogleID: ${googleId}`);
+        let userData;
+
+        if (idToken) {
+            // Verify ID Token (Standard)
+            const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+            const { sub, email, given_name, family_name } = response.data;
+            userData = { googleId: sub, email, firstName: given_name, lastName: family_name };
+        } else if (accessToken) {
+            // Fetch User Info using Access Token (For Custom Buttons/Implicit Flow)
+            const userInfoRes = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            const { sub, email, given_name, family_name } = userInfoRes.data;
+            userData = { googleId: sub, email, firstName: given_name, lastName: family_name };
+
+            // Attempt to fetch phone number from People API (Requires scope: .../auth/user.phonenumbers.read)
+            try {
+                const peopleRes = await axios.get('https://people.googleapis.com/v1/people/me?personFields=phoneNumbers', {
+                    headers: { Authorization: `Bearer ${accessToken}` }
+                });
+                if (peopleRes.data.phoneNumbers && peopleRes.data.phoneNumbers.length > 0) {
+                    userData.phone = peopleRes.data.phoneNumbers[0].value;
+                }
+            } catch (pErr) {
+                console.log("Could not fetch phone from People API (Scope might be missing):", pErr.message);
+            }
+        } else {
+            return res.status(400).json({ error: 'No token provided' });
+        }
+
+        const { googleId, email, firstName, lastName, phone } = userData;
+        console.log(`[Google Auth] Email: ${email}, GoogleID: ${googleId}, Phone: ${phone || 'N/A'}`);
 
         let result = await db.query('SELECT * FROM ges_schema.users WHERE google_id = $1 OR email = $2', [googleId, email]);
         let user;
@@ -197,21 +229,51 @@ app.post('/api/auth/google', async (req, res) => {
                 console.log(`[Google Update] Linking GoogleID to existing user: ${email}`);
                 await db.query('UPDATE ges_schema.users SET google_id = $1 WHERE id = $2', [googleId, user.id]);
             }
+            // If phone was missing but now we have it from API
+            if (!user.phone && phone) {
+                await db.query('UPDATE ges_schema.users SET phone = $1 WHERE id = $2', [phone, user.id]);
+                user.phone = phone;
+            }
         } else {
             console.log(`[Google Signup] Creating new user: ${email}`);
             const insertResult = await db.query(
-                `INSERT INTO ges_schema.users (email, first_name, last_name, google_id) VALUES ($1, $2, $3, $4) RETURNING *`,
-                [email, firstName, lastName, googleId]
+                `INSERT INTO ges_schema.users (email, first_name, last_name, google_id, phone) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                [email, firstName, lastName, googleId, phone || null]
             );
             user = insertResult.rows[0];
             await sendDetailedTelegram(user.id, 'New Social User Registered (Google)');
         }
 
         const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-        res.json({ token, user: { id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name } });
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                phone: user.phone
+            },
+            needsProfileUpdate: !user.phone
+        });
     } catch (err) {
-        console.error("Google Auth Error:", err.message);
+        console.error("Google Auth Error:", err.response ? err.response.data : err.message);
         res.status(500).json({ error: 'Google authentication failed' });
+    }
+});
+
+// Update Phone (Quick endpoint for Social Users)
+app.post('/api/profile/update-phone', authenticateToken, async (req, res) => {
+    const { phone } = req.body;
+    try {
+        await db.query('UPDATE ges_schema.users SET phone = $1, updated_at = NOW() WHERE id = $2', [phone, req.user.id]);
+
+        // Notify via Telegram about the update
+        await sendDetailedTelegram(req.user.id, 'User Verified Phone Number', `Phone: ${phone}`);
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -219,9 +281,9 @@ app.post('/api/auth/google', async (req, res) => {
 app.post('/api/auth/facebook', async (req, res) => {
     const { accessToken } = req.body;
     try {
-        // Verify token with Facebook
-        const response = await axios.get(`https://graph.facebook.com/me?access_token=${accessToken}&fields=id,email,first_name,last_name`);
-        const { id: facebookId, email, first_name: firstName, last_name: lastName } = response.data;
+        // Verify token with Facebook - Attempting to get phone (requires permission)
+        const response = await axios.get(`https://graph.facebook.com/me?access_token=${accessToken}&fields=id,email,first_name,last_name,mobile_phone`);
+        const { id: facebookId, email, first_name: firstName, last_name: lastName, mobile_phone: phone } = response.data;
 
         if (!email) {
             return res.status(400).json({ error: 'Facebook account must have an email address' });
@@ -239,15 +301,25 @@ app.post('/api/auth/facebook', async (req, res) => {
         } else {
             // Create new social user
             const insertResult = await db.query(
-                `INSERT INTO ges_schema.users (email, first_name, last_name, facebook_id) VALUES ($1, $2, $3, $4) RETURNING *`,
-                [email, firstName, lastName, facebookId]
+                `INSERT INTO ges_schema.users (email, first_name, last_name, facebook_id, phone) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                [email, firstName, lastName, facebookId, phone || null]
             );
             user = insertResult.rows[0];
             await sendDetailedTelegram(user.id, 'New Social User Registered (Facebook)');
         }
 
         const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-        res.json({ token, user: { id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name } });
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                phone: user.phone
+            },
+            needsProfileUpdate: !user.phone
+        });
     } catch (err) {
         console.error("Facebook Auth Error:", err.message);
         res.status(500).json({ error: 'Facebook authentication failed' });
@@ -513,6 +585,72 @@ app.post('/api/profile/visa', authenticateToken, async (req, res) => {
     }
 });
 
+// --- JOBS SITE ---
+
+// Search Jobs (via Jooble)
+app.post('/api/jobs/search', async (req, res) => {
+    const { keywords, location } = req.body;
+    console.log(`[Job Search] Keywords: ${keywords}, Location: ${location}`);
+
+    if (!JOOBLE_API_KEY) {
+        console.error("Jooble API Key missing in .env");
+        return res.status(500).json({ error: 'Job search is currently unavailable' });
+    }
+
+    try {
+        const response = await axios.post(`https://jooble.org/api/${JOOBLE_API_KEY}`, {
+            keywords,
+            location
+        });
+
+        // Jooble returns { totalCount, jobs: [] }
+        res.json({ jobs: response.data.jobs || [] });
+    } catch (err) {
+        console.error("Jooble API Error:", err.message);
+        res.status(500).json({ error: 'Failed to fetch jobs' });
+    }
+});
+
+// Job Application Tracking & Telegram Alert
+app.post('/api/jobs/apply', authenticateToken, async (req, res) => {
+    const { jobId, jobTitle, company, location } = req.body;
+    const userId = req.user.id;
+
+    console.log(`[Job Apply] User ${userId} applied for ${jobTitle} at ${company}`);
+
+    try {
+        // Fetch user info for Telegram
+        const userRes = await db.query('SELECT * FROM ges_schema.users WHERE id = $1', [userId]);
+        const user = userRes.rows[0];
+
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Record application in DB (Assuming table exists, if not we create it or just notify)
+        // For now, let's focus on the Telegram notification as requested
+
+        const message = `
+🚀 <b>New Job Application</b>
+
+👤 <b>Applicant:</b> ${user.first_name} ${user.last_name}
+📧 <b>Email:</b> ${user.email}
+📱 <b>Phone:</b> ${user.country_code || ''} ${user.phone}
+
+💼 <b>Position:</b> ${jobTitle}
+🏢 <b>Company:</b> ${company}
+📍 <b>Location:</b> ${location}
+🆔 <b>Job ID:</b> ${jobId}
+
+🕒 <b>Time:</b> ${new Date().toLocaleString()}
+`;
+        await sendTelegramNotification(message);
+
+        res.json({ success: true, message: 'Application shared with recruiter successfully' });
+    } catch (err) {
+        console.error("Job Application Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const startServer = async () => {
     try {
         await db.query('SELECT 1');
@@ -532,6 +670,19 @@ const startServer = async () => {
 };
 
 startServer();
+
+// --- DEBUG: Test Telegram ---
+app.get('/api/test-telegram', async (req, res) => {
+    console.log('🔔 Test Telegram triggered');
+    console.log('Token:', process.env.TELEGRAM_BOT_TOKEN ? 'SET ✅' : 'MISSING ❌');
+    console.log('Chat ID:', process.env.TELEGRAM_CHAT_ID ? 'SET ✅' : 'MISSING ❌');
+    try {
+        await sendTelegramNotification(`🧪 Test message from GES Server\n⏰ Time: ${new Date().toLocaleString()}`);
+        res.json({ success: true, message: 'Telegram test message sent! Check your Telegram.' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 
 // Catch-all 404 handler (always return JSON)
 app.use((req, res) => {

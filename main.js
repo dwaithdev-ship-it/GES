@@ -1,5 +1,5 @@
 // Custom Backend Config - dynamically use the same host the page was loaded from
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `http://${window.location.hostname}:5000/api`;
 
 const api = {
     async request(endpoint, method = 'GET', body = null, token = null) {
@@ -667,6 +667,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- SOCIAL AUTH LOGIC ---
+    let googleTokenClient;
+
+    const handleGoogleTokenResponse = async (tokenResponse) => {
+        if (tokenResponse && tokenResponse.access_token) {
+            try {
+                const res = await api.request('/auth/google', 'POST', { accessToken: tokenResponse.access_token });
+                localStorage.setItem('token', res.token);
+
+                if (res.needsProfileUpdate) {
+                    const phone = prompt("Welcome! Please enter your mobile number to complete your registration:");
+                    if (phone) {
+                        await api.request('/profile/update-phone', 'POST', { phone }, res.token);
+                    }
+                }
+
+                alert('Welcome ' + (res.user.first_name || 'User') + '! Login successful.');
+                closeAllModals();
+                await checkAuthStatus();
+                window.location.hash = '';
+            } catch (err) {
+                console.error("Google Auth failed:", err);
+                alert("Google Authentication failed");
+            }
+        }
+    };
 
     const handleGoogleCredentialResponse = async (response) => {
         try {
@@ -689,6 +714,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 api.request('/auth/facebook', 'POST', { accessToken })
                     .then(async (res) => {
                         localStorage.setItem('token', res.token);
+
+                        if (res.needsProfileUpdate) {
+                            const phone = prompt("Welcome! Please enter your mobile number to complete your registration:");
+                            if (phone) {
+                                await api.request('/profile/update-phone', 'POST', { phone }, res.token);
+                            }
+                        }
+
                         alert('Welcome ' + (res.user.first_name || 'User') + '! Login successful.');
                         closeAllModals();
                         await checkAuthStatus();
@@ -701,25 +734,39 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 console.log('User cancelled login or did not fully authorize.');
             }
-        }, { scope: 'email,public_profile' });
+        }, { scope: 'email,public_profile,user_mobile_phone' });
     };
 
     // Initialize SDKs
     const initSocialAuth = () => {
         console.log("Initializing Social Auth...");
+
+        // 1. Initialize Google Identity Services
         if (typeof google !== 'undefined') {
             console.log("Google SDK detected.");
+
+            // Standard ID logic (for One Tap if needed)
             google.accounts.id.initialize({
                 client_id: "654721077447-1620tmnla74ekka5u0m9aqm6feigtalk.apps.googleusercontent.com",
                 callback: handleGoogleCredentialResponse,
-                use_fedcm_for_prompt: true
+                auto_select: false,
+                cancel_on_tap_outside: true
             });
+
+            // Token Client (for custom button popups - MOST RELIABLE)
+            googleTokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: "654721077447-1620tmnla74ekka5u0m9aqm6feigtalk.apps.googleusercontent.com",
+                scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/user.phonenumbers.read',
+                callback: handleGoogleTokenResponse,
+            });
+
         } else {
             console.warn("Google SDK not yet loaded, retrying...");
             setTimeout(initSocialAuth, 1000);
             return;
         }
 
+        // 2. Initialize Facebook
         if (typeof FB !== 'undefined') {
             FB.init({
                 appId: '1459790719118881',
@@ -729,22 +776,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Attach Social Click Handlers
+        // 3. Attach Social Click Handlers
         document.querySelectorAll('.social-btn.google').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log("Google login button click detected.");
-                if (typeof google !== 'undefined') {
-                    console.log("Calling google.accounts.id.prompt()...");
-                    google.accounts.id.prompt((notification) => {
-                        console.log("Google Prompt status:", notification);
-                        if (notification.isNotDisplayed()) {
-                            console.warn("Google Prompt not displayed. Reason:", notification.getNotDisplayedReason());
-                        }
-                    });
+                console.log("Google custom button clicked. Opening account selector...");
+                if (googleTokenClient) {
+                    googleTokenClient.requestAccessToken();
                 } else {
-                    console.error("Google SDK missing on click!");
-                    alert('Google Sign-In is still loading. Please try again.');
+                    alert('Google Sign-In is still initializing. Please wait a moment.');
                 }
             });
         });
@@ -3083,14 +3123,20 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-weight: 700; color: #111; font-size: 1.1rem;">${job.salary || 'Competitive'}</span>
                 <div style="display: flex; gap: 10px;">
-                    <a href="${job.link}" target="_blank" class="btn-job-details" style="text-decoration: none; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #ddd; color: #444; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: background 0.3s;">View Details</a>
-                    <button class="btn-apply-job" data-job-id="${job.id}" style="background: #ea4335; color: #fff; border: none; padding: 10px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.3s; font-size: 0.9rem;">Apply Now</button>
-                </div>
+                <button class="btn-job-details-view" data-job-id="${job.id}" style="background: #fff; border: 1px solid #ddd; color: #444; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: background 0.3s;">View Details</button>
+                <button class="btn-apply-job" data-job-id="${job.id}" style="background: #ea4335; color: #fff; border: none; padding: 10px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.3s; font-size: 0.9rem;">Apply Now</button>
             </div>
-        `;
+        </div>
+    `;
 
         div.onmouseover = () => div.style.transform = 'translateY(-10px)';
         div.onmouseout = () => div.style.transform = 'translateY(0)';
+
+        const viewDetailsBtn = div.querySelector('.btn-job-details-view');
+        viewDetailsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openJobDetailsModal(job);
+        });
 
         const applyBtn = div.querySelector('.btn-apply-job');
         applyBtn.addEventListener('click', (e) => {
@@ -3130,7 +3176,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 applyBtn.innerText = 'Applied Successfully';
                 applyBtn.style.background = '#2e7d32';
                 applyBtn.style.opacity = '1';
-                alert(`SUCCESS: Your GES profile (Name: ${currentUser.first_name}, Email: ${currentUser.email}) and resume have been shared with ${job.company || 'the recruiter'}. They will contact you shortly via ${currentUser.phone || 'your phone member'}.`);
+                alert(`SUCCESS: Your GES profile (Name: ${currentUser.first_name}, Email: ${currentUser.email}) and resume have been shared with ${job.company || 'the recruiter'}. We are now redirecting you to the official application page.`);
+
+                // Open Jooble link in new tab to finish application
+                window.open(job.link, '_blank');
             }, 1000);
         } catch (err) {
             applyBtn.innerText = 'Apply Now';
@@ -3222,6 +3271,61 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     initModalSaveStates();
+
+    // Global modal control functions
+    window.openJobDetailsModal = async function (job) {
+        const modal = document.getElementById('jobDetailsModal');
+        const content = document.getElementById('jobDetailsContent');
+        const applyBtn = document.getElementById('modalApplyBtn');
+
+        if (!modal || !content) return;
+
+        modal.style.display = 'flex';
+        content.innerHTML = `
+            <div style="text-align: left;">
+                <div style="margin-bottom: 25px;">
+                    <h2 style="font-size: 1.8rem; font-weight: 800; color: #111; margin-bottom: 10px;">${job.title}</h2>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <span style="color: #ea4335; font-weight: 700;"><i class="fas fa-map-marker-alt"></i> ${job.location}</span>
+                        <span style="color: #666; font-weight: 600;"><i class="fas fa-building"></i> ${job.company || 'Global Partner'}</span>
+                        <span style="background: rgba(46, 125, 50, 0.1); color: #2e7d32; padding: 4px 12px; border-radius: 50px; font-size: 0.8rem; font-weight: 700;">${job.type || 'Full Time'}</span>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <h4 style="font-weight: 700; color: #333; margin-bottom: 15px; font-size: 1.1rem; border-left: 4px solid #ea4335; padding-left: 10px;">Job Description</h4>
+                    <div style="color: #444; line-height: 1.8; font-size: 1rem;">
+                        ${job.snippet}
+                    </div>
+                    <p style="margin-top: 20px; font-style: italic; color: #888; font-size: 0.85rem;">
+                        * The snippet above provides a summary of the role. For the full official listing, you can visit the partner site after applying.
+                    </p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid #eee; padding-top: 25px;">
+                    <div>
+                        <h5 style="color: #888; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin-bottom: 5px;">Salary Range</h5>
+                        <p style="font-weight: 700; color: #111; font-size: 1.1rem;">${job.salary || 'Competitive / Not Disclosed'}</p>
+                    </div>
+                    <div>
+                        <h5 style="color: #888; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin-bottom: 5px;">Posted On</h5>
+                        <p style="font-weight: 700; color: #111; font-size: 1.1rem;">${new Date(job.updated).toLocaleDateString() || 'Recently'}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Update Apply button in modal
+        applyBtn.onclick = () => {
+            closeJobDetailsModal();
+            handleJobApply(job);
+        };
+    }
+
+    window.closeJobDetailsModal = function () {
+        const modal = document.getElementById('jobDetailsModal');
+        if (modal) modal.style.display = 'none';
+    }
 
     checkAuthStatus();
 });
