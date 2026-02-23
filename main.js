@@ -1,5 +1,5 @@
-// Custom Backend Config - Pointing to your local PC for Vercel access
-const API_URL = 'http://192.168.29.122:5000/api';
+// Custom Backend Config - dynamically use the same host the page was loaded from
+const API_URL = `http://${window.location.hostname}:5000/api`;
 
 const api = {
     async request(endpoint, method = 'GET', body = null, token = null) {
@@ -756,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Token Client (for custom button popups - MOST RELIABLE)
             googleTokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: "654721077447-1620tmnla74ekka5u0m9aqm6feigtalk.apps.googleusercontent.com",
-                scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/user.phonenumbers.read',
+                scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
                 callback: handleGoogleTokenResponse,
             });
 
