@@ -1,5 +1,5 @@
 // Custom Backend Config - dynamically use the same host the page was loaded from
-const API_URL = `http://${window.location.hostname}:5000/api`;
+const API_URL = 'https://ges-backend-80m1.onrender.com/api';
 
 const api = {
     async request(endpoint, method = 'GET', body = null, token = null) {
