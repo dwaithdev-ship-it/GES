@@ -21,14 +21,22 @@ echo "Installing app dependencies..."
 cd "$(dirname "$0")"
 npm install --production
 
+# Backup DB before running migrations (if backup script exists)
+if [ -f "./backup_db.sh" ]; then
+  chmod +x ./backup_db.sh
+  echo "Running DB backup..."
+  ./backup_db.sh || echo "DB backup failed; aborting deploy." && exit 1
+fi
+
 # Run DB schema
 if [ -f "./migrate_db.sh" ]; then
   chmod +x ./migrate_db.sh
   ./migrate_db.sh
 fi
 
-# Optional JS migrations
+# Optional JS migrations (dry-run by default). To apply changes, run with --apply manually on server.
 if [ -f "./migrate_data.js" ]; then
+  echo "Running data migration (dry-run). To apply, ssh to server and run: node migrate_data.js --apply"
   node migrate_data.js || true
 fi
 
