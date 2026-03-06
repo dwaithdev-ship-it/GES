@@ -1,5 +1,6 @@
-// Custom Backend Config - dynamically use the same host the page was loaded from
-const API_URL = `http://${window.location.hostname}:5000/api`;
+// Custom Backend Config - use relative API path when proxied, fallback to backend host:5000 when needed
+const API_URL = '/api';
+const BACKEND_FALLBACK = `http://${window.location.hostname}:5000/api`;
 
 const api = {
     async request(endpoint, method = 'GET', body = null, token = null) {
@@ -9,15 +10,56 @@ const api = {
         const config = { method, headers };
         if (body) config.body = JSON.stringify(body);
 
-        const response = await fetch(`${API_URL}${endpoint}`, config);
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Request failed');
-        return data;
+        // Try relative API first (works when frontend is proxied to backend)
+        let response;
+        try {
+            response = await fetch(`${API_URL}${endpoint}`, config);
+        } catch (err) {
+            // Network error when calling relative path - try direct backend
+            response = await fetch(`${BACKEND_FALLBACK}${endpoint}`, config);
+        }
+
+        // If relative returned 404 or HTML, try backend fallback
+        const contentType = response.headers.get('content-type') || '';
+        if ((response.status === 404 || contentType.includes('text/html')) && `${API_URL}` !== BACKEND_FALLBACK) {
+            try {
+                response = await fetch(`${BACKEND_FALLBACK}${endpoint}`, config);
+            } catch (err) {
+                // ignore and let error handling below surface
+            }
+        }
+
+        // Only attempt JSON parse for JSON responses
+        const respContentType = response.headers.get('content-type') || '';
+        if (respContentType.includes('application/json')) {
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Request failed');
+            return data;
+        } else {
+            // Unexpected non-JSON returned (likely HTML 404 page)
+            const text = await response.text();
+            throw new Error(`Unexpected response: ${text.slice(0, 200)}`);
+        }
     }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     let currentUser = null;
+    // Provide a safe global logout handler so other functions can call it
+    // without causing ReferenceError if the local pdLogout handler is not yet initialized.
+    window.handleLogout = () => {
+        try {
+            localStorage.removeItem('token');
+            currentUser = null;
+            if (typeof checkAuthStatus === 'function') {
+                checkAuthStatus();
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            console.error('Error in global handleLogout:', err);
+        }
+    };
     let editingItemId = null; // Track ID of the item being edited
     // Authenticated View Elements
     const authLinks = document.getElementById('authLinks');
@@ -157,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
             item.className = 'profile-list-item';
             item.innerHTML = `
                 <div class="profile-list-item-header">
-                    <div class="profile-list-item-title"><i class="fas fa-graduation-cap" style="color:#6a1b9a;margin-right:8px;"></i>${edu.degree_name || 'Degree'}</div>
+                    <div class="profile-list-item-title"><i class="fas fa-graduation-cap" style="color:#6a1b9a;margin-right:8px;"></i>${edu.degree || 'Degree'}</div>
                     <div class="profile-list-item-actions">
                         <i class="fas fa-pen btn-edit-item" title="Edit" data-section="education" data-id="${edu.id}" style="color:#ea4335;cursor:pointer;"></i>
                         <i class="fas fa-trash-alt btn-delete-item" title="Delete" data-section="education" data-id="${edu.id}" style="color:#999;cursor:pointer;margin-left:12px;"></i>
@@ -165,13 +207,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="profile-list-item-subtitle" style="font-weight:600;">${edu.institution || '--'}</div>
                 <div class="profile-list-item-meta" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
-                    ${edu.field_of_study ? `<span style="background:#f3e5f5;padding:2px 8px;border-radius:4px;font-size:0.8rem;">${edu.field_of_study}</span>` : ''}
-                    ${edu.education_level ? `<span style="background:#e8f5e9;padding:2px 8px;border-radius:4px;font-size:0.8rem;">${edu.education_level}</span>` : ''}
+                        ${edu.study_field ? `<span style="background:#f3e5f5;padding:2px 8px;border-radius:4px;font-size:0.8rem;">${edu.study_field}</span>` : ''}
+                        ${edu.edu_level ? `<span style="background:#e8f5e9;padding:2px 8px;border-radius:4px;font-size:0.8rem;">${edu.edu_level}</span>` : ''}
                     ${edu.location ? `<span style="background:#e3f2fd;padding:2px 8px;border-radius:4px;font-size:0.8rem;"><i class="fas fa-map-marker-alt" style="margin-right:3px;"></i>${edu.location}</span>` : ''}
                 </div>
                 <div style="font-size:0.8rem;color:#777;margin-top:6px;"><i class="far fa-calendar-alt" style="margin-right:4px;"></i>${edu.start_month || ''} ${edu.start_year || ''} - ${edu.end_month || ''} ${edu.end_year || 'Present'}${edu.course_type ? ' • ' + edu.course_type : ''}${edu.study_mode ? ' • ' + edu.study_mode : ''}</div>
                 ${edu.score_value ? `<div style="font-size:0.8rem;color:#555;margin-top:4px;"><i class="fas fa-chart-line" style="margin-right:4px;color:#4caf50;"></i>Score: ${edu.score_value} (${edu.score_type || ''})</div>` : ''}
-                ${edu.is_highest_education ? '<span style="background:#fff3e0;padding:2px 8px;border-radius:4px;font-size:0.75rem;color:#e65100;margin-top:4px;display:inline-block;"><i class="fas fa-star" style="margin-right:3px;"></i>Highest Qualification</span>' : ''}
+                ${edu.is_highest ? '<span style="background:#fff3e0;padding:2px 8px;border-radius:4px;font-size:0.75rem;color:#e65100;margin-top:4px;display:inline-block;"><i class="fas fa-star" style="margin-right:3px;"></i>Highest Qualification</span>' : ''}
             `;
             container.appendChild(item);
         });
@@ -198,13 +240,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="profile-list-item-subtitle" style="font-weight:600;">${work.company || '--'}</div>
-                <div class="profile-list-item-meta" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
-                    ${work.functional_area ? `<span style="background:#e3f2fd;padding:2px 8px;border-radius:4px;font-size:0.8rem;">${work.functional_area}</span>` : ''}
+                    <div class="profile-list-item-meta" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+                        ${work.domain ? `<span style="background:#e3f2fd;padding:2px 8px;border-radius:4px;font-size:0.8rem;">${work.domain}</span>` : ''}
                     ${work.industry ? `<span style="background:#f3e5f5;padding:2px 8px;border-radius:4px;font-size:0.8rem;">${work.industry}</span>` : ''}
                     ${work.employment_type ? `<span style="background:#e8f5e9;padding:2px 8px;border-radius:4px;font-size:0.8rem;">${work.employment_type}</span>` : ''}
                     ${work.location ? `<span style="background:#fff3e0;padding:2px 8px;border-radius:4px;font-size:0.8rem;"><i class="fas fa-map-marker-alt" style="margin-right:3px;"></i>${work.location}</span>` : ''}
                 </div>
-                <div style="font-size:0.8rem;color:#777;margin-top:6px;"><i class="far fa-calendar-alt" style="margin-right:4px;"></i>${work.start_month || ''} ${work.start_year || ''} - ${work.is_current_role ? '<span style="color:#4caf50;font-weight:600;">Present</span>' : ((work.end_month || '') + ' ' + (work.end_year || ''))}</div>
+                <div style="font-size:0.8rem;color:#777;margin-top:6px;"><i class="far fa-calendar-alt" style="margin-right:4px;"></i>${work.start_month || ''} ${work.start_year || ''} - ${work.is_current ? '<span style="color:#4caf50;font-weight:600;">Present</span>' : ((work.end_month || '') + ' ' + (work.end_year || ''))}</div>
                 ${work.responsibilities ? `<div style="font-size:0.8rem;color:#555;margin-top:4px;"><strong>Responsibilities:</strong> ${work.responsibilities}</div>` : ''}
                 ${work.achievements ? `<div style="font-size:0.8rem;color:#555;margin-top:2px;"><strong>Achievements:</strong> ${work.achievements}</div>` : ''}
             `;
@@ -253,11 +295,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fas fa-trash-alt btn-delete-item" title="Delete" data-section="tests" data-id="${test.id}" style="color:#999;cursor:pointer;margin-left:12px;"></i>
                     </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
                     <div style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);padding:8px 16px;border-radius:8px;font-weight:700;font-size:1.1rem;color:#e65100;">${test.score || '--'}</div>
                     <div>
                         <div style="font-size:0.8rem;color:#777;">Taken: ${test.taken_month || ''} ${test.taken_year || ''}</div>
-                        ${test.valid_till_month ? `<div style="font-size:0.8rem;color:#4caf50;">Valid: ${test.valid_till_month} ${test.valid_till_year || ''}</div>` : ''}
+                        ${test.valid_month ? `<div style="font-size:0.8rem;color:#4caf50;">Valid: ${test.valid_month} ${test.valid_year || ''}</div>` : ''}
                     </div>
                 </div>
             `;
@@ -318,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div style="margin-top:6px;font-size:0.85rem;color:#555;">Specification: <strong>${visa.specification || '--'}</strong></div>
-                <div style="margin-top:4px;font-size:0.85rem;color:#777;"><i class="far fa-calendar-alt" style="margin-right:4px;"></i>Valid till: ${visa.valid_till_date || ''} ${visa.valid_till_month || ''} ${visa.valid_till_year || ''}</div>
+                <div style="margin-top:4px;font-size:0.85rem;color:#777;"><i class="far fa-calendar-alt" style="margin-right:4px;"></i>Valid till: ${visa.valid_date || ''} ${visa.valid_month || ''} ${visa.valid_year || ''}</div>
             `;
             container.appendChild(item);
         });
@@ -357,6 +399,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (removeResumeBtnTab) removeResumeBtnTab.style.display = 'none';
         }
     };
+
+    
 
     window.removeResume = () => {
         if (!currentUser) return;
@@ -464,6 +508,39 @@ document.addEventListener('DOMContentLoaded', () => {
     // Use setInterval for "every 15 seconds" - only for logged-out users
     autoModalTimer = setInterval(triggerAutoModal, 15000);
 
+    // Ensure terms checkbox is unchecked by default
+    const termsCheckbox = document.getElementById('terms');
+    if (termsCheckbox) termsCheckbox.checked = false;
+
+    // Terms & Privacy modal handling
+    const termsLink = document.getElementById('termsLink');
+    const termsModal = document.getElementById('termsModal');
+    const termsOkBtn = document.getElementById('termsOkBtn');
+
+    if (termsLink && termsModal) {
+        termsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            termsModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        });
+
+        // Close when clicking outside content
+        termsModal.addEventListener('click', (e) => {
+            if (e.target === termsModal) {
+                termsModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+    }
+
+    if (termsOkBtn && termsModal) {
+        termsOkBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            termsModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+    }
+
     // Open Enquiry (Signup) - ONLY when not logged in
     if (signupBtn && enquiryModal) {
         signupBtn.addEventListener('click', (e) => {
@@ -557,7 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (editGeneralBtn && editAccountModal && editAccountForm) {
         editGeneralBtn.addEventListener('click', () => {
             // Pre-fill
-            const displayName = pdFullName ? pdFullName.innerText : 'Kalyan Dev';
+                const displayName = pdFullName ? pdFullName.innerText : 'Your Name';
             const firstName = displayName.split(' ')[0];
             const lastName = displayName.split(' ').slice(1).join(' ');
             const email = document.querySelector('.set-email').innerText;
@@ -1408,13 +1485,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            await api.request(endpoint, 'POST', data, token);
+            const res = await api.request(endpoint, 'POST', data, token);
+            // Merge returned item into currentUser collections when available, then refresh full details
+            if (res && res.data) {
+                // If endpoint returned a single item, optimistically append/update
+                try {
+                    const keyMap = {
+                        '/profile/education': 'education',
+                        '/profile/work': 'work_experience',
+                        '/profile/skills': 'skills',
+                        '/profile/tests': 'tests',
+                        '/profile/languages': 'languages',
+                        '/profile/visa': 'visa_history'
+                    };
+                    const key = keyMap[endpoint];
+                    if (key) {
+                        currentUser[key] = currentUser[key] || [];
+                        // If updating existing item, replace; else prepend new
+                        const idx = currentUser[key].findIndex(i => i.id === res.data.id);
+                        if (idx >= 0) currentUser[key][idx] = res.data;
+                        else currentUser[key].unshift(res.data);
+                    }
+                } catch (e) {
+                    console.warn('Could not merge saved profile item locally:', e.message);
+                }
+            }
+
             alert('Details saved successfully!');
             closeProfileModal(modalId);
-            // Refresh User Data and UI
-            await checkAuthStatus();
+            // Refresh extended profile details and UI
+            await refreshProfileDetails();
         } catch (err) {
             alert('Error saving details: ' + err.message);
+        }
+    };
+
+    // Refresh extended profile details from server and update UI
+    const refreshProfileDetails = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            const details = await api.request('/profile/details', 'GET', null, token);
+            currentUser.education = details.education || [];
+            currentUser.work_experience = details.work || [];
+            currentUser.skills = details.skills || [];
+            currentUser.tests = details.tests || [];
+            currentUser.languages = details.languages || [];
+            currentUser.visa_history = details.visa || [];
+            // identity returned in details.identity may contain updated fields
+            if (details.identity) {
+                currentUser = Object.assign(currentUser || {}, details.identity);
+            }
+            updateUIWithUserData(currentUser, (currentUser.first_name && currentUser.first_name[0]) ? (currentUser.first_name[0] + (currentUser.last_name ? currentUser.last_name[0] : '')).toUpperCase() : '');
+            renderProfileDetails();
+        } catch (e) {
+            console.warn('Failed to refresh profile details:', e.message);
         }
     };
 
@@ -1432,31 +1557,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const prefillEducation = (edu) => {
         document.getElementById('edu_institution').value = edu.institution || '';
-        document.getElementById('edu_field').value = edu.field_of_study || '';
-        document.getElementById('edu_level').value = edu.education_level || '';
-        document.getElementById('edu_degree').value = edu.degree_name || '';
+        document.getElementById('edu_field').value = edu.study_field || '';
+        document.getElementById('edu_level').value = edu.edu_level || '';
+        document.getElementById('edu_degree').value = edu.degree || '';
         document.getElementById('edu_country').value = edu.location || '';
-        document.getElementById('edu_is_highest').checked = edu.is_highest_education || false;
+        document.getElementById('edu_is_highest').checked = edu.is_highest || false;
         document.getElementById('edu_start_month').value = edu.start_month || '';
         document.getElementById('edu_start_year').value = edu.start_year || '';
         document.getElementById('edu_end_month').value = edu.end_month || '';
         document.getElementById('edu_end_year').value = edu.end_year || '';
         document.getElementById('edu_course_type').value = edu.course_type || '';
         document.getElementById('edu_study_mode').value = edu.study_mode || '';
-        document.getElementById('edu_medium').value = edu.medium_of_education || '';
+        document.getElementById('edu_medium').value = edu.medium || '';
         document.getElementById('edu_division').value = edu.division || '';
         const radio = document.querySelector(`input[name="edu_score_type"][value="${edu.score_type}"]`);
         if (radio) radio.checked = true;
         document.getElementById('edu_score_value').value = edu.score_value || '';
-        document.getElementById('edu_additional').value = edu.additional_info || '';
+        document.getElementById('edu_additional').value = edu.info || '';
     };
 
     const prefillWork = (work) => {
         document.getElementById('work_company').value = work.company || '';
-        document.getElementById('work_domain').value = work.functional_area || '';
+        document.getElementById('work_domain').value = work.domain || '';
         document.getElementById('work_role').value = work.role || '';
         document.getElementById('work_location').value = work.location || '';
-        document.getElementById('work_is_current').checked = work.is_current_role || false;
+        document.getElementById('work_is_current').checked = work.is_current || false;
         document.getElementById('work_start_month').value = work.start_month || '';
         document.getElementById('work_start_year').value = work.start_year || '';
         document.getElementById('work_end_month').value = work.end_month || '';
@@ -1466,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('work_responsibilities').value = work.responsibilities || '';
         document.getElementById('work_achievements').value = work.achievements || '';
         if (document.getElementById('work_additional')) {
-            document.getElementById('work_additional').value = work.additional_info || '';
+            document.getElementById('work_additional').value = work.info || '';
         }
     };
 
@@ -1475,8 +1600,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('test_score').value = test.score || '';
         document.getElementById('test_taken_month').value = test.taken_month || '';
         document.getElementById('test_taken_year').value = test.taken_year || '';
-        document.getElementById('test_valid_month').value = test.valid_till_month || '';
-        document.getElementById('test_valid_year').value = test.valid_till_year || '';
+        document.getElementById('test_valid_month').value = test.valid_month || '';
+        document.getElementById('test_valid_year').value = test.valid_year || '';
     };
 
     const prefillLanguages = (lang) => {
@@ -1493,9 +1618,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('visa_type').value = visa.visa_type || '';
         document.getElementById('visa_country').value = visa.country || '';
         document.getElementById('visa_specification').value = visa.specification || '';
-        document.getElementById('visa_valid_date').value = visa.valid_till_date || '';
-        document.getElementById('visa_valid_month').value = visa.valid_till_month || '';
-        document.getElementById('visa_valid_year').value = visa.valid_till_year || '';
+        document.getElementById('visa_valid_date').value = visa.valid_date || '';
+        document.getElementById('visa_valid_month').value = visa.valid_month || '';
+        document.getElementById('visa_valid_year').value = visa.valid_year || '';
     };
 
     // Global listener for dynamic Edit/Delete buttons
@@ -1607,7 +1732,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('ident_marital_status').value = currentUser.marital_status || '';
             document.getElementById('ident_nationality').value = currentUser.nationality || '';
             document.getElementById('ident_phone').value = currentUser.phone || '';
+            if (document.getElementById('ident_cc_phone') && currentUser.country_code) document.getElementById('ident_cc_phone').value = currentUser.country_code;
             document.getElementById('ident_alt_phone').value = currentUser.alt_phone || '';
+            if (document.getElementById('ident_cc_alt_phone') && currentUser.alt_country_code) document.getElementById('ident_cc_alt_phone').value = currentUser.alt_country_code;
             document.getElementById('ident_nickname').value = currentUser.nickname || '';
             document.getElementById('ident_employment_status').value = currentUser.employment_status || '';
             document.getElementById('ident_skype_id').value = currentUser.skype_id || '';
@@ -1736,7 +1863,9 @@ document.addEventListener('DOMContentLoaded', () => {
             maritalStatus: document.getElementById('ident_marital_status').value,
             nationality: document.getElementById('ident_nationality').value,
             phone: document.getElementById('ident_phone').value,
+            countryCode: document.getElementById('ident_cc_phone') ? document.getElementById('ident_cc_phone').value : null,
             altPhone: document.getElementById('ident_alt_phone').value,
+            altCountryCode: document.getElementById('ident_cc_alt_phone') ? document.getElementById('ident_cc_alt_phone').value : null,
             nickname: document.getElementById('ident_nickname').value,
             employmentStatus: document.getElementById('ident_employment_status').value,
             skypeId: document.getElementById('ident_skype_id').value,
@@ -1750,8 +1879,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await api.request('/profile/identity', 'POST', data, token);
             alert('Identity details saved successfully!');
             closeProfileModal('modalIdentity');
-            // Refresh User Data and UI
-            checkAuthStatus();
+            await refreshProfileDetails();
         } catch (err) {
             alert('Error saving identity: ' + err.message);
         }
@@ -2818,7 +2946,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mapImg = document.getElementById('leadFormMap');
         if (mapImg) {
             const mapPaths = {
-                'UK': './flags/uk_map.png',
+                'UK': './flags/uk.png',
                 'Canada': './flags/canada_map.png',
                 'Germany': './flags/germany_map.png'
             };

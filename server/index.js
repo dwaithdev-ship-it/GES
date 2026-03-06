@@ -401,7 +401,7 @@ app.post('/api/auth/profile/resume', authenticateToken, async (req, res) => {
 app.post('/api/profile/identity', authenticateToken, async (req, res) => {
     const {
         firstName, lastName, middleName, dob, gender, maritalStatus, nationality,
-        phone, altPhone, nickname, employmentStatus, skypeId, landline,
+        phone, countryCode, altPhone, altCountryCode, nickname, employmentStatus, skypeId, landline,
         githubId, linkedinId, currentLocation
     } = req.body;
 
@@ -409,13 +409,13 @@ app.post('/api/profile/identity', authenticateToken, async (req, res) => {
         await db.query(
             `UPDATE ges_schema.users SET 
             first_name = $1, last_name = $2, middle_name = $3, dob = $4, gender = $5, 
-            marital_status = $6, nationality = $7, phone = $8, alt_phone = $9, 
-            nickname = $10, employment_status = $11, skype_id = $12, landline = $13, 
-            github_id = $14, linkedin_id = $15, current_location = $16, updated_at = NOW() 
-            WHERE id = $17`,
+            marital_status = $6, nationality = $7, phone = $8, country_code = $9, alt_phone = $10, alt_country_code = $11,
+            nickname = $12, employment_status = $13, skype_id = $14, landline = $15, 
+            github_id = $16, linkedin_id = $17, current_location = $18, updated_at = NOW() 
+            WHERE id = $19`,
             [
                 firstName, lastName, middleName, dob, gender, maritalStatus, nationality,
-                phone, altPhone, nickname, employmentStatus, skypeId, landline,
+                phone, countryCode, altPhone, altCountryCode, nickname, employmentStatus, skypeId, landline,
                 githubId, linkedinId, currentLocation, req.user.id
             ]
         );
@@ -440,7 +440,7 @@ app.post('/api/profile/education', authenticateToken, async (req, res) => {
             // Update
             const result = await db.query(
                 `UPDATE ges_schema.user_education SET 
-                institution=$1, field_of_study=$2, education_level=$3, degree_name=$4, location=$5, is_highest_education=$6, start_month=$7, start_year=$8, end_month=$9, end_year=$10, course_type=$11, study_mode=$12, medium_of_education=$13, division=$14, score_type=$15, score_value=$16, additional_info=$17, updated_at=NOW()
+                institution=$1, study_field=$2, edu_level=$3, degree=$4, location=$5, is_highest=$6, start_month=$7, start_year=$8, end_month=$9, end_year=$10, course_type=$11, study_mode=$12, medium=$13, division=$14, score_type=$15, score_value=$16, info=$17, updated_at=NOW()
                 WHERE id=$18 AND user_id=$19 RETURNING *`,
                 [institution, study_field, edu_level, degree, location, is_highest, start_month, start_year, end_month, end_year, course_type, study_mode, medium, division, score_type, score_value, info, id, req.user.id]
             );
@@ -449,7 +449,7 @@ app.post('/api/profile/education', authenticateToken, async (req, res) => {
             // Insert
             const result = await db.query(
                 `INSERT INTO ges_schema.user_education 
-                (user_id, institution, field_of_study, education_level, degree_name, location, is_highest_education, start_month, start_year, end_month, end_year, course_type, study_mode, medium_of_education, division, score_type, score_value, additional_info) 
+                (user_id, institution, study_field, edu_level, degree, location, is_highest, start_month, start_year, end_month, end_year, course_type, study_mode, medium, division, score_type, score_value, info) 
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
                 RETURNING *`,
                 [req.user.id, institution, study_field, edu_level, degree, location, is_highest, start_month, start_year, end_month, end_year, course_type, study_mode, medium, division, score_type, score_value, info]
@@ -489,7 +489,7 @@ app.post('/api/profile/work', authenticateToken, async (req, res) => {
             // Update
             const result = await db.query(
                 `UPDATE ges_schema.user_work_experience SET 
-                company=$1, functional_area=$2, role=$3, location=$4, is_current_role=$5, start_month=$6, start_year=$7, end_month=$8, end_year=$9, employment_type=$10, industry=$11, responsibilities=$12, achievements=$13, additional_info=$14, updated_at=NOW()
+                company=$1, domain=$2, role=$3, location=$4, is_current=$5, start_month=$6, start_year=$7, end_month=$8, end_year=$9, employment_type=$10, industry=$11, responsibilities=$12, achievements=$13, info=$14, updated_at=NOW()
                 WHERE id=$15 AND user_id=$16 RETURNING *`,
                 [company, domain, role, location, is_current, start_month, start_year, end_month, end_year, employment_type, industry, responsibilities, achievements, info, id, req.user.id]
             );
@@ -498,7 +498,7 @@ app.post('/api/profile/work', authenticateToken, async (req, res) => {
             // Insert
             const result = await db.query(
                 `INSERT INTO ges_schema.user_work_experience 
-                (user_id, company, functional_area, role, location, is_current_role, start_month, start_year, end_month, end_year, employment_type, industry, responsibilities, achievements, additional_info) 
+                (user_id, company, domain, role, location, is_current, start_month, start_year, end_month, end_year, employment_type, industry, responsibilities, achievements, info) 
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
                 RETURNING *`,
                 [req.user.id, company, domain, role, location, is_current, start_month, start_year, end_month, end_year, employment_type, industry, responsibilities, achievements, info]
@@ -534,13 +534,13 @@ app.post('/api/profile/tests', authenticateToken, async (req, res) => {
     try {
         if (id) {
             const result = await db.query(
-                `UPDATE ges_schema.user_tests SET test_name=$1, score=$2, taken_month=$3, taken_year=$4, valid_till_month=$5, valid_till_year=$6 WHERE id=$7 AND user_id=$8 RETURNING *`,
+                `UPDATE ges_schema.user_tests SET test_name=$1, score=$2, taken_month=$3, taken_year=$4, valid_month=$5, valid_year=$6 WHERE id=$7 AND user_id=$8 RETURNING *`,
                 [test_name, score, taken_month, taken_year, valid_month, valid_year, id, req.user.id]
             );
             res.json({ success: true, data: result.rows[0] });
         } else {
             const result = await db.query(
-                `INSERT INTO ges_schema.user_tests (user_id, test_name, score, taken_month, taken_year, valid_till_month, valid_till_year) 
+                `INSERT INTO ges_schema.user_tests (user_id, test_name, score, taken_month, taken_year, valid_month, valid_year) 
                 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
                 [req.user.id, test_name, score, taken_month, taken_year, valid_month, valid_year]
             );
@@ -558,13 +558,13 @@ app.post('/api/profile/languages', authenticateToken, async (req, res) => {
     try {
         if (id) {
             const result = await db.query(
-                `UPDATE ges_schema.user_languages SET language_name=$1, overall_proficiency=$2, listening_proficiency=$3, speaking_proficiency=$4, reading_proficiency=$5, writing_proficiency=$6 WHERE id=$7 AND user_id=$8 RETURNING *`,
+                `UPDATE ges_schema.user_languages SET name=$1, overall=$2, listening=$3, speaking=$4, reading=$5, writing=$6 WHERE id=$7 AND user_id=$8 RETURNING *`,
                 [name, overall, listening, speaking, reading, writing, id, req.user.id]
             );
             res.json({ success: true, data: result.rows[0] });
         } else {
             const result = await db.query(
-                `INSERT INTO ges_schema.user_languages (user_id, language_name, overall_proficiency, listening_proficiency, speaking_proficiency, reading_proficiency, writing_proficiency) 
+                `INSERT INTO ges_schema.user_languages (user_id, name, overall, listening, speaking, reading, writing) 
                 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
                 [req.user.id, name, overall, listening, speaking, reading, writing]
             );
@@ -582,13 +582,13 @@ app.post('/api/profile/visa', authenticateToken, async (req, res) => {
     try {
         if (id) {
             const result = await db.query(
-                `UPDATE ges_schema.user_visa_history SET visa_type=$1, country=$2, specification=$3, valid_till_date=$4, valid_till_month=$5, valid_till_year=$6 WHERE id=$7 AND user_id=$8 RETURNING *`,
+                `UPDATE ges_schema.user_visa_history SET type=$1, country=$2, specification=$3, valid_date=$4, valid_month=$5, valid_year=$6 WHERE id=$7 AND user_id=$8 RETURNING *`,
                 [type, country, specification, valid_date, valid_month, valid_year, id, req.user.id]
             );
             res.json({ success: true, data: result.rows[0] });
         } else {
             const result = await db.query(
-                `INSERT INTO ges_schema.user_visa_history (user_id, visa_type, country, specification, valid_till_date, valid_till_month, valid_till_year) 
+                `INSERT INTO ges_schema.user_visa_history (user_id, type, country, specification, valid_date, valid_month, valid_year) 
                 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
                 [req.user.id, type, country, specification, valid_date, valid_month, valid_year]
             );
