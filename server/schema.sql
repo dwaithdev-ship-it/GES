@@ -95,7 +95,8 @@ CREATE TABLE IF NOT EXISTS ges_schema.user_education (
     score_type VARCHAR(20),
     score_value VARCHAR(20),
     info TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Work Experience Table
@@ -116,7 +117,8 @@ CREATE TABLE IF NOT EXISTS ges_schema.user_work_experience (
     responsibilities TEXT,
     achievements TEXT,
     info TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Skills Table
@@ -124,7 +126,8 @@ CREATE TABLE IF NOT EXISTS ges_schema.user_skills (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE,
     skill_name VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tests Table
@@ -136,8 +139,11 @@ CREATE TABLE IF NOT EXISTS ges_schema.user_tests (
     taken_month VARCHAR(20),
     taken_year VARCHAR(10),
     valid_month VARCHAR(20),
+    valid_till_month VARCHAR(20),
     valid_year VARCHAR(10),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    valid_till_year VARCHAR(10),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Languages Table
@@ -150,7 +156,8 @@ CREATE TABLE IF NOT EXISTS ges_schema.user_languages (
     speaking VARCHAR(50),
     reading VARCHAR(50),
     writing VARCHAR(50),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Visa History Table
@@ -162,6 +169,9 @@ CREATE TABLE IF NOT EXISTS ges_schema.user_visa_history (
     specification VARCHAR(255),
     valid_date VARCHAR(10),
     valid_month VARCHAR(20),
+    valid_till_month VARCHAR(20),
     valid_year VARCHAR(10),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    valid_till_year VARCHAR(10),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

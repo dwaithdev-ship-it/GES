@@ -23,6 +23,273 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const JOOBLE_API_KEY = process.env.JOOBLE_API_KEY;
 
+const profileTableDefinitions = {
+    user_education: {
+        createTableSql: `
+            CREATE TABLE IF NOT EXISTS ges_schema.user_education (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE,
+                institution VARCHAR(255),
+                study_field VARCHAR(255),
+                edu_level VARCHAR(50),
+                degree VARCHAR(255),
+                location VARCHAR(100),
+                is_highest BOOLEAN DEFAULT FALSE,
+                start_month VARCHAR(20),
+                start_year VARCHAR(10),
+                end_month VARCHAR(20),
+                end_year VARCHAR(10),
+                course_type VARCHAR(100),
+                study_mode VARCHAR(100),
+                medium VARCHAR(100),
+                division VARCHAR(100),
+                score_type VARCHAR(20),
+                score_value VARCHAR(20),
+                info TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `,
+        columns: {
+            user_id: 'INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE',
+            institution: 'VARCHAR(255)',
+            study_field: 'VARCHAR(255)',
+            edu_level: 'VARCHAR(50)',
+            degree: 'VARCHAR(255)',
+            location: 'VARCHAR(100)',
+            is_highest: 'BOOLEAN DEFAULT FALSE',
+            start_month: 'VARCHAR(20)',
+            start_year: 'VARCHAR(10)',
+            end_month: 'VARCHAR(20)',
+            end_year: 'VARCHAR(10)',
+            course_type: 'VARCHAR(100)',
+            study_mode: 'VARCHAR(100)',
+            medium: 'VARCHAR(100)',
+            division: 'VARCHAR(100)',
+            score_type: 'VARCHAR(20)',
+            score_value: 'VARCHAR(20)',
+            info: 'TEXT',
+            created_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP',
+            updated_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP'
+        }
+    },
+    user_work_experience: {
+        createTableSql: `
+            CREATE TABLE IF NOT EXISTS ges_schema.user_work_experience (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE,
+                company VARCHAR(255),
+                domain VARCHAR(255),
+                role VARCHAR(255),
+                location VARCHAR(100),
+                is_current BOOLEAN DEFAULT FALSE,
+                start_month VARCHAR(20),
+                start_year VARCHAR(10),
+                end_month VARCHAR(20),
+                end_year VARCHAR(10),
+                employment_type VARCHAR(100),
+                industry VARCHAR(100),
+                responsibilities TEXT,
+                achievements TEXT,
+                info TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `,
+        columns: {
+            user_id: 'INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE',
+            company: 'VARCHAR(255)',
+            domain: 'VARCHAR(255)',
+            role: 'VARCHAR(255)',
+            location: 'VARCHAR(100)',
+            is_current: 'BOOLEAN DEFAULT FALSE',
+            start_month: 'VARCHAR(20)',
+            start_year: 'VARCHAR(10)',
+            end_month: 'VARCHAR(20)',
+            end_year: 'VARCHAR(10)',
+            employment_type: 'VARCHAR(100)',
+            industry: 'VARCHAR(100)',
+            responsibilities: 'TEXT',
+            achievements: 'TEXT',
+            info: 'TEXT',
+            created_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP',
+            updated_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP'
+        }
+    },
+    user_skills: {
+        createTableSql: `
+            CREATE TABLE IF NOT EXISTS ges_schema.user_skills (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE,
+                skill_name VARCHAR(100),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `,
+        columns: {
+            user_id: 'INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE',
+            skill_name: 'VARCHAR(100)',
+            created_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP',
+            updated_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP'
+        }
+    },
+    user_tests: {
+        createTableSql: `
+            CREATE TABLE IF NOT EXISTS ges_schema.user_tests (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE,
+                test_name VARCHAR(100),
+                score VARCHAR(50),
+                taken_month VARCHAR(20),
+                taken_year VARCHAR(10),
+                valid_month VARCHAR(20),
+                valid_till_month VARCHAR(20),
+                valid_year VARCHAR(10),
+                valid_till_year VARCHAR(10),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `,
+        columns: {
+            user_id: 'INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE',
+            test_name: 'VARCHAR(100)',
+            score: 'VARCHAR(50)',
+            taken_month: 'VARCHAR(20)',
+            taken_year: 'VARCHAR(10)',
+            valid_month: 'VARCHAR(20)',
+            valid_till_month: 'VARCHAR(20)',
+            valid_year: 'VARCHAR(10)',
+            valid_till_year: 'VARCHAR(10)',
+            created_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP',
+            updated_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP'
+        }
+    },
+    user_languages: {
+        createTableSql: `
+            CREATE TABLE IF NOT EXISTS ges_schema.user_languages (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE,
+                name VARCHAR(100),
+                overall VARCHAR(50),
+                listening VARCHAR(50),
+                speaking VARCHAR(50),
+                reading VARCHAR(50),
+                writing VARCHAR(50),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `,
+        columns: {
+            user_id: 'INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE',
+            name: 'VARCHAR(100)',
+            overall: 'VARCHAR(50)',
+            listening: 'VARCHAR(50)',
+            speaking: 'VARCHAR(50)',
+            reading: 'VARCHAR(50)',
+            writing: 'VARCHAR(50)',
+            created_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP',
+            updated_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP'
+        }
+    },
+    user_visa_history: {
+        createTableSql: `
+            CREATE TABLE IF NOT EXISTS ges_schema.user_visa_history (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE,
+                type VARCHAR(100),
+                country VARCHAR(100),
+                specification VARCHAR(255),
+                valid_date VARCHAR(10),
+                valid_month VARCHAR(20),
+                valid_till_month VARCHAR(20),
+                valid_year VARCHAR(10),
+                valid_till_year VARCHAR(10),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `,
+        columns: {
+            user_id: 'INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE',
+            type: 'VARCHAR(100)',
+            country: 'VARCHAR(100)',
+            specification: 'VARCHAR(255)',
+            valid_date: 'VARCHAR(10)',
+            valid_month: 'VARCHAR(20)',
+            valid_till_month: 'VARCHAR(20)',
+            valid_year: 'VARCHAR(10)',
+            valid_till_year: 'VARCHAR(10)',
+            created_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP',
+            updated_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP'
+        }
+    }
+};
+
+const getProfileRows = async (tableName, userId) => {
+    try {
+        const result = await db.query(
+            `SELECT * FROM ges_schema.${tableName}
+             WHERE user_id = $1
+             ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST, id DESC`,
+            [userId]
+        );
+        if (tableName === 'user_tests') {
+            return result.rows.map((row) => ({
+                ...row,
+                valid_month: row.valid_month || row.valid_till_month || '',
+                valid_year: row.valid_year || row.valid_till_year || ''
+            }));
+        }
+        if (tableName === 'user_visa_history') {
+            return result.rows.map((row) => ({
+                ...row,
+                valid_month: row.valid_month || row.valid_till_month || '',
+                valid_year: row.valid_year || row.valid_till_year || ''
+            }));
+        }
+        return result.rows;
+    } catch (err) {
+        console.error(`[Profile Read Error] ${tableName}: ${err.message}`);
+        return [];
+    }
+};
+
+const ensureProfileSchema = async () => {
+    await db.query('CREATE SCHEMA IF NOT EXISTS ges_schema');
+
+    for (const [tableName, definition] of Object.entries(profileTableDefinitions)) {
+        await db.query(definition.createTableSql);
+
+        for (const [columnName, columnDefinition] of Object.entries(definition.columns)) {
+            await db.query(
+                `ALTER TABLE ges_schema.${tableName} ADD COLUMN IF NOT EXISTS ${columnName} ${columnDefinition}`
+            );
+        }
+
+        const duplicateUserConstraints = await db.query(
+            `SELECT con.conname
+             FROM pg_constraint con
+             JOIN pg_class rel ON rel.oid = con.conrelid
+             JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
+             WHERE nsp.nspname = 'ges_schema'
+               AND rel.relname = $1
+               AND con.contype = 'u'
+               AND array_length(con.conkey, 1) = 1
+               AND EXISTS (
+                   SELECT 1
+                   FROM pg_attribute att
+                   WHERE att.attrelid = rel.oid
+                     AND att.attnum = con.conkey[1]
+                     AND att.attname = 'user_id'
+               )`,
+            [tableName]
+        );
+
+        for (const { conname } of duplicateUserConstraints.rows) {
+            await db.query(`ALTER TABLE ges_schema.${tableName} DROP CONSTRAINT IF EXISTS ${conname}`);
+        }
+    }
+};
+
 // Helper to send Telegram notification
 const sendTelegramNotification = async (message) => {
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
@@ -343,23 +610,23 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 app.get('/api/profile/details', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        const education = await db.query('SELECT * FROM ges_schema.user_education WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
-        const work = await db.query('SELECT * FROM ges_schema.user_work_experience WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
-        const skills = await db.query('SELECT * FROM ges_schema.user_skills WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
-        const tests = await db.query('SELECT * FROM ges_schema.user_tests WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
-        const languages = await db.query('SELECT * FROM ges_schema.user_languages WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
-        const visa = await db.query('SELECT * FROM ges_schema.user_visa_history WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
-
-        // Also fetch identity details to pre-fill identity modal
-        const identity = await db.query('SELECT * FROM ges_schema.users WHERE id = $1', [userId]);
+        const [education, work, skills, tests, languages, visa, identity] = await Promise.all([
+            getProfileRows('user_education', userId),
+            getProfileRows('user_work_experience', userId),
+            getProfileRows('user_skills', userId),
+            getProfileRows('user_tests', userId),
+            getProfileRows('user_languages', userId),
+            getProfileRows('user_visa_history', userId),
+            db.query('SELECT * FROM ges_schema.users WHERE id = $1', [userId])
+        ]);
 
         res.json({
-            education: education.rows,
-            work: work.rows,
-            skills: skills.rows,
-            tests: tests.rows,
-            languages: languages.rows,
-            visa: visa.rows,
+            education,
+            work,
+            skills,
+            tests,
+            languages,
+            visa,
             identity: identity.rows[0]
         });
     } catch (err) {
@@ -516,8 +783,11 @@ app.post('/api/profile/skills', authenticateToken, async (req, res) => {
     const { id, skill_name } = req.body;
     try {
         if (id) {
-            await db.query('UPDATE ges_schema.user_skills SET skill_name=$1 WHERE id=$2 AND user_id=$3', [skill_name, id, req.user.id]);
-            res.json({ success: true });
+            const result = await db.query(
+                'UPDATE ges_schema.user_skills SET skill_name=$1, updated_at=NOW() WHERE id=$2 AND user_id=$3 RETURNING *',
+                [skill_name, id, req.user.id]
+            );
+            res.json({ success: true, data: result.rows[0] });
         } else {
             const result = await db.query(`INSERT INTO ges_schema.user_skills (user_id, skill_name) VALUES ($1, $2) RETURNING *`, [req.user.id, skill_name]);
             await sendDetailedTelegram(req.user.id, 'Profile Section Update: Skills', `Skill Added: ${skill_name}`);
@@ -534,14 +804,16 @@ app.post('/api/profile/tests', authenticateToken, async (req, res) => {
     try {
         if (id) {
             const result = await db.query(
-                `UPDATE ges_schema.user_tests SET test_name=$1, score=$2, taken_month=$3, taken_year=$4, valid_month=$5, valid_year=$6 WHERE id=$7 AND user_id=$8 RETURNING *`,
+                `UPDATE ges_schema.user_tests
+                 SET test_name=$1, score=$2, taken_month=$3, taken_year=$4, valid_month=$5, valid_till_month=$5, valid_year=$6, valid_till_year=$6, updated_at=NOW()
+                 WHERE id=$7 AND user_id=$8 RETURNING *`,
                 [test_name, score, taken_month, taken_year, valid_month, valid_year, id, req.user.id]
             );
             res.json({ success: true, data: result.rows[0] });
         } else {
             const result = await db.query(
-                `INSERT INTO ges_schema.user_tests (user_id, test_name, score, taken_month, taken_year, valid_month, valid_year) 
-                VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+                `INSERT INTO ges_schema.user_tests (user_id, test_name, score, taken_month, taken_year, valid_month, valid_till_month, valid_year, valid_till_year) 
+                VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $7) RETURNING *`,
                 [req.user.id, test_name, score, taken_month, taken_year, valid_month, valid_year]
             );
             await sendDetailedTelegram(req.user.id, 'Profile Section Update: Tests', `Test: ${test_name}, Score: ${score}`);
@@ -558,7 +830,9 @@ app.post('/api/profile/languages', authenticateToken, async (req, res) => {
     try {
         if (id) {
             const result = await db.query(
-                `UPDATE ges_schema.user_languages SET name=$1, overall=$2, listening=$3, speaking=$4, reading=$5, writing=$6 WHERE id=$7 AND user_id=$8 RETURNING *`,
+                `UPDATE ges_schema.user_languages
+                 SET name=$1, overall=$2, listening=$3, speaking=$4, reading=$5, writing=$6, updated_at=NOW()
+                 WHERE id=$7 AND user_id=$8 RETURNING *`,
                 [name, overall, listening, speaking, reading, writing, id, req.user.id]
             );
             res.json({ success: true, data: result.rows[0] });
@@ -582,14 +856,16 @@ app.post('/api/profile/visa', authenticateToken, async (req, res) => {
     try {
         if (id) {
             const result = await db.query(
-                `UPDATE ges_schema.user_visa_history SET type=$1, country=$2, specification=$3, valid_date=$4, valid_month=$5, valid_year=$6 WHERE id=$7 AND user_id=$8 RETURNING *`,
+                `UPDATE ges_schema.user_visa_history
+                 SET type=$1, country=$2, specification=$3, valid_date=$4, valid_month=$5, valid_till_month=$5, valid_year=$6, valid_till_year=$6, updated_at=NOW()
+                 WHERE id=$7 AND user_id=$8 RETURNING *`,
                 [type, country, specification, valid_date, valid_month, valid_year, id, req.user.id]
             );
             res.json({ success: true, data: result.rows[0] });
         } else {
             const result = await db.query(
-                `INSERT INTO ges_schema.user_visa_history (user_id, type, country, specification, valid_date, valid_month, valid_year) 
-                VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+                `INSERT INTO ges_schema.user_visa_history (user_id, type, country, specification, valid_date, valid_month, valid_till_month, valid_year, valid_till_year) 
+                VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $7) RETURNING *`,
                 [req.user.id, type, country, specification, valid_date, valid_month, valid_year]
             );
             await sendDetailedTelegram(req.user.id, 'Profile Section Update: Visa History', `Type: ${type}, Country: ${country}`);
@@ -669,6 +945,7 @@ app.post('/api/jobs/apply', authenticateToken, async (req, res) => {
 const startServer = async () => {
     try {
         await db.query('SELECT 1');
+        await ensureProfileSchema();
         console.log('-----------------------------------------');
         console.log(`[${new Date().toLocaleTimeString()}] CONNECTED TO POSTGRESQL`);
         console.log(`[${new Date().toLocaleTimeString()}] SERVER RUNNING ON PORT: ${PORT}`);

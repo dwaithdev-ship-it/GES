@@ -22,8 +22,6 @@ async function runMigration() {
         `);
         console.log('Photo columns added successfully.');
 
-        // Enforce single entry for profile sections if user wants "replacement"
-        // We'll add a unique constraint on user_id for these tables to allow upsert logic
         const tables = [
             'user_education',
             'user_work_experience',
@@ -35,13 +33,38 @@ async function runMigration() {
 
         for (const table of tables) {
             try {
-                // Drop existing unique constraint if any (to avoid duplicates if we re-run)
-                await pool.query(`ALTER TABLE ges_schema.${table} DROP CONSTRAINT IF EXISTS unique_user_${table}`);
-                // Add unique constraint on user_id
-                await pool.query(`ALTER TABLE ges_schema.${table} ADD CONSTRAINT unique_user_${table} UNIQUE (user_id)`);
-                console.log(`Unique constraint added to ${table}`);
+                await pool.query(`
+                    ALTER TABLE ges_schema.${table}
+                    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                `);
+
+                const constraints = await pool.query(
+                    `SELECT con.conname
+                     FROM pg_constraint con
+                     JOIN pg_class rel ON rel.oid = con.conrelid
+                     JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
+                     WHERE nsp.nspname = 'ges_schema'
+                       AND rel.relname = $1
+                       AND con.contype = 'u'
+                       AND array_length(con.conkey, 1) = 1
+                       AND EXISTS (
+                           SELECT 1
+                           FROM pg_attribute att
+                           WHERE att.attrelid = rel.oid
+                             AND att.attnum = con.conkey[1]
+                             AND att.attname = 'user_id'
+                       )`,
+                    [table]
+                );
+
+                for (const { conname } of constraints.rows) {
+                    await pool.query(`ALTER TABLE ges_schema.${table} DROP CONSTRAINT IF EXISTS ${conname}`);
+                }
+
+                console.log(`Profile table normalized: ${table}`);
             } catch (err) {
-                console.warn(`Could not add unique constraint to ${table}:`, err.message);
+                console.warn(`Could not normalize ${table}:`, err.message);
             }
         }
 
