@@ -299,6 +299,22 @@ const ensureProfileSchema = async () => {
     for (const [tableName, definition] of Object.entries(profileTableDefinitions)) {
         await db.query(definition.createTableSql);
 
+        // Sync users table first
+        const userCols = {
+            google_id: 'VARCHAR(255)',
+            facebook_id: 'VARCHAR(255)',
+            password_hash: 'TEXT' // Ensure this can be nullable
+        };
+        for (const [col, type] of Object.entries(userCols)) {
+            try {
+                if (col === 'password_hash') {
+                    await db.query(`ALTER TABLE ges_schema.users ALTER COLUMN password_hash DROP NOT NULL`);
+                } else {
+                    await db.query(`ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS ${col} ${type}`);
+                }
+            } catch (err) { }
+        }
+
         for (const [columnName, columnDefinition] of Object.entries(definition.columns)) {
             await db.query(
                 `ALTER TABLE ges_schema.${tableName} ADD COLUMN IF NOT EXISTS ${columnName} ${columnDefinition}`

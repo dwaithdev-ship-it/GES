@@ -4,7 +4,7 @@ CREATE SCHEMA IF NOT EXISTS ges_schema;
 CREATE TABLE IF NOT EXISTS ges_schema.users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT, -- Nullable for social login
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     middle_name VARCHAR(100),
@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS ges_schema.users (
     landline VARCHAR(20),
     github_id VARCHAR(255),
     linkedin_id VARCHAR(255),
+    google_id VARCHAR(255),
+    facebook_id VARCHAR(255),
     current_location VARCHAR(100),
     purpose VARCHAR(100),
     target_country VARCHAR(100),
@@ -31,6 +33,7 @@ CREATE TABLE IF NOT EXISTS ges_schema.users (
 -- Migration for existing users
 DO $$ 
 BEGIN 
+    ALTER TABLE ges_schema.users ALTER COLUMN password_hash DROP NOT NULL;
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS middle_name VARCHAR(100);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS gender VARCHAR(20);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS marital_status VARCHAR(50);
@@ -38,6 +41,12 @@ BEGIN
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS alt_phone VARCHAR(20);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS nickname VARCHAR(100);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS employment_status VARCHAR(100);
+    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS skype_id VARCHAR(100);
+    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS landline VARCHAR(20);
+    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS github_id VARCHAR(255);
+    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS linkedin_id VARCHAR(255);
+    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255);
+    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS facebook_id VARCHAR(255);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS skype_id VARCHAR(100);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS landline VARCHAR(20);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS github_id VARCHAR(255);

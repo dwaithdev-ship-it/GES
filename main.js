@@ -1,7 +1,3 @@
-// Custom Backend Config - use relative API path when proxied, fallback to backend host:5000 when needed
-const API_URL = '/api';
-const BACKEND_FALLBACK = `http://${window.location.hostname}:5000/api`;
-
 const api = {
     async request(endpoint, method = 'GET', body = null, token = null) {
         const headers = { 'Content-Type': 'application/json' };
@@ -10,35 +6,45 @@ const api = {
         const config = { method, headers };
         if (body) config.body = JSON.stringify(body);
 
-        // Try relative API first (works when frontend is proxied to backend)
-        let response;
+        // ALWAYS use relative path or domain-matched path to avoid Mixed Content
+        const fullUrl = (endpoint.startsWith('http')) ? endpoint : `/api${endpoint}`;
+
         try {
-            response = await fetch(`${API_URL}${endpoint}`, config);
-        } catch (err) {
-            // Network error when calling relative path - try direct backend
-            response = await fetch(`${BACKEND_FALLBACK}${endpoint}`, config);
-        }
+            let response = await fetch(fullUrl, config);
 
-        // If relative returned 404 or HTML, try backend fallback
-        const contentType = response.headers.get('content-type') || '';
-        if ((response.status === 404 || contentType.includes('text/html')) && `${API_URL}` !== BACKEND_FALLBACK) {
-            try {
-                response = await fetch(`${BACKEND_FALLBACK}${endpoint}`, config);
-            } catch (err) {
-                // ignore and let error handling below surface
+            // If relative returns 404 or HTML (common on misconfigured proxies), 
+            // try to reach the backend on the same host but port 5000 as a last resort.
+            // ONLY if the protocol matches (HTTPS -> HTTPS)
+            const contentType = response.headers.get('content-type') || '';
+            if (response.status === 404 || contentType.includes('text/html')) {
+                const fallbackUrl = `${window.location.protocol}//${window.location.hostname}:5000/api${endpoint}`;
+                if (fullUrl !== fallbackUrl) {
+                    console.warn(`Primary endpoint ${fullUrl} failed, trying fallback: ${fallbackUrl}`);
+                    const fallbackResponse = await fetch(fallbackUrl, config);
+                    if (fallbackResponse.ok || fallbackResponse.status < 500) {
+                        response = fallbackResponse;
+                    }
+                }
             }
-        }
 
-        // Only attempt JSON parse for JSON responses
-        const respContentType = response.headers.get('content-type') || '';
-        if (respContentType.includes('application/json')) {
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Request failed');
-            return data;
-        } else {
-            // Unexpected non-JSON returned (likely HTML 404 page)
-            const text = await response.text();
-            throw new Error(`Unexpected response: ${text.slice(0, 200)}`);
+            const respContentType = response.headers.get('content-type') || '';
+            if (respContentType.includes('application/json')) {
+                const data = await response.json();
+                if (!response.ok) {
+                    console.error("API Error Response:", data);
+                    throw new Error(data.error || 'Request failed');
+                }
+                return data;
+            } else {
+                const text = await response.text();
+                if (!response.ok) {
+                    throw new Error(`Server error (${response.status}): ${text.slice(0, 100)}`);
+                }
+                return text;
+            }
+        } catch (err) {
+            console.error("Fetch failed for:", fullUrl, err);
+            throw err;
         }
     }
 };
@@ -764,13 +770,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 await checkAuthStatus();
                 window.location.hash = '';
             } catch (err) {
-                console.error("Google Auth failed:", err);
-                alert("Google Authentication failed");
+                console.error("Google Auth backend error:", err);
+                alert("Google Authentication failed: " + (err.message || 'Unknown error'));
             }
         }
     };
 
     const handleGoogleCredentialResponse = async (response) => {
+        console.log("Google One Tap/ID Token response received.");
         try {
             const res = await api.request('/auth/google', 'POST', { idToken: response.credential });
             localStorage.setItem('token', res.token);
@@ -779,8 +786,8 @@ document.addEventListener('DOMContentLoaded', () => {
             await checkAuthStatus();
             window.location.hash = '';
         } catch (err) {
-            console.error("Google Auth failed:", err);
-            alert("Google Authentication failed");
+            console.error("Google Credential Auth failed:", err);
+            alert("Google Authentication failed: " + (err.message || 'Unknown error'));
         }
     };
 
