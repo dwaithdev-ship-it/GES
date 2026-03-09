@@ -522,6 +522,35 @@ app.post('/api/auth/reset-password-phone', async (req, res) => {
     }
 });
 
+// Update Profile (General Settings)
+app.put('/api/auth/profile', authenticateToken, async (req, res) => {
+    const { firstName, lastName, phone, dob } = req.body;
+    try {
+        await db.query(
+            'UPDATE ges_schema.users SET first_name = $1, last_name = $2, phone = $3, dob = $4, updated_at = NOW() WHERE id = $5',
+            [firstName, lastName, phone, dob, req.user.id]
+        );
+        res.json({ success: true, message: 'Profile updated successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update Security (Password)
+app.put('/api/auth/security', authenticateToken, async (req, res) => {
+    const { newPassword } = req.body;
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+        await db.query(
+            'UPDATE ges_schema.users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+            [hashedPassword, req.user.id]
+        );
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- SOCIAL AUTH ---
 
 // Google Login/Signup
