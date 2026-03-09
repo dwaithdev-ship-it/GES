@@ -2954,8 +2954,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mapImg) {
             const mapPaths = {
                 'UK': './flags/uk.png',
-                'Canada': './flags/canada_map.png',
-                'Germany': './flags/germany_map.png'
+                'Canada': './flags/canada.png',
+                'Germany': './flags/germany.png'
             };
             if (mapPaths[wizardData.country]) {
                 mapImg.src = mapPaths[wizardData.country];
