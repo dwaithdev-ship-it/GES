@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS ges_schema.users (
     resume_name TEXT,
     photo_content TEXT,
     photo_type VARCHAR(50),
+    alt_country_code VARCHAR(10),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -42,6 +43,7 @@ BEGIN
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS marital_status VARCHAR(50);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS nationality VARCHAR(100);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS alt_phone VARCHAR(20);
+    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS alt_country_code VARCHAR(10);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS nickname VARCHAR(100);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS employment_status VARCHAR(100);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS skype_id VARCHAR(100);
@@ -50,10 +52,6 @@ BEGIN
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS linkedin_id VARCHAR(255);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS facebook_id VARCHAR(255);
-    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS skype_id VARCHAR(100);
-    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS landline VARCHAR(20);
-    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS github_id VARCHAR(255);
-    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS linkedin_id VARCHAR(255);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS current_location VARCHAR(100);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS purpose VARCHAR(100);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS target_country VARCHAR(100);

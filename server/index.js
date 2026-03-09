@@ -306,7 +306,22 @@ const ensureProfileSchema = async () => {
             password_hash: 'TEXT',
             resume_name: 'TEXT',
             photo_content: 'TEXT',
-            photo_type: 'VARCHAR(50)'
+            photo_type: 'VARCHAR(50)',
+            middle_name: 'VARCHAR(100)',
+            gender: 'VARCHAR(20)',
+            marital_status: 'VARCHAR(50)',
+            nationality: 'VARCHAR(100)',
+            alt_phone: 'VARCHAR(20)',
+            alt_country_code: 'VARCHAR(10)',
+            nickname: 'VARCHAR(100)',
+            employment_status: 'VARCHAR(100)',
+            skype_id: 'VARCHAR(100)',
+            landline: 'VARCHAR(20)',
+            github_id: 'VARCHAR(255)',
+            linkedin_id: 'VARCHAR(255)',
+            current_location: 'VARCHAR(100)',
+            purpose: 'VARCHAR(100)',
+            target_country: 'VARCHAR(100)'
         };
         for (const [col, type] of Object.entries(userCols)) {
             try {
