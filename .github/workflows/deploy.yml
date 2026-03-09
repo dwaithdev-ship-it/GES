@@ -2,21 +2,32 @@ name: Deploy to EC2
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to EC2 Server
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: 16.170.206.130
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ~/gesskillbridge/GES
-            git pull origin main
+            echo "Connecting to server..."
+            cd /home/ec2-user/gesskillbridge/GES
+
+            echo "Pulling latest code..."
+            git fetch --all
+            git reset --hard origin/main
+
+            echo "Installing dependencies..."
             cd server
             npm install
+
+            echo "Restarting API..."
             pm2 restart gesskillbridge-api
