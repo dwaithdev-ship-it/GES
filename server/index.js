@@ -221,6 +221,46 @@ const profileTableDefinitions = {
             created_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP',
             updated_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP'
         }
+    },
+    applications: {
+        createTableSql: `
+            CREATE TABLE IF NOT EXISTS ges_schema.applications (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE,
+                job_id VARCHAR(100) NOT NULL,
+                job_title VARCHAR(255),
+                company VARCHAR(255),
+                location VARCHAR(255),
+                status VARCHAR(50) DEFAULT 'pending',
+                applied_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `,
+        columns: {
+            user_id: 'INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE',
+            job_id: 'VARCHAR(100) NOT NULL',
+            job_title: 'VARCHAR(255)',
+            company: 'VARCHAR(255)',
+            location: 'VARCHAR(255)',
+            status: "VARCHAR(50) DEFAULT 'pending'",
+            applied_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP'
+        }
+    },
+    job_search_logs: {
+        createTableSql: `
+            CREATE TABLE IF NOT EXISTS ges_schema.job_search_logs (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE SET NULL,
+                search_query TEXT NOT NULL,
+                location VARCHAR(255),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        `,
+        columns: {
+            user_id: 'INTEGER REFERENCES ges_schema.users(id) ON DELETE SET NULL',
+            search_query: 'TEXT NOT NULL',
+            location: 'VARCHAR(255)',
+            created_at: 'TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP'
+        }
     }
 };
 
@@ -883,12 +923,29 @@ app.post('/api/jobs/search', async (req, res) => {
     const { keywords, location } = req.body;
     console.log(`[Job Search] Keywords: ${keywords}, Location: ${location}`);
 
+    // Optional user logging if token provided
+    let userId = null;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            userId = decoded.id;
+        } catch (e) { /* ignore invalid token for search */ }
+    }
+
     if (!JOOBLE_API_KEY) {
         console.error("Jooble API Key missing in .env");
         return res.status(500).json({ error: 'Job search is currently unavailable' });
     }
 
     try {
+        // Log the search query to DB
+        await db.query(
+            'INSERT INTO ges_schema.job_search_logs (user_id, search_query, location) VALUES ($1, $2, $3)',
+            [userId, keywords, location]
+        );
+
         const response = await axios.post(`https://jooble.org/api/${JOOBLE_API_KEY}`, {
             keywords,
             location
@@ -897,8 +954,24 @@ app.post('/api/jobs/search', async (req, res) => {
         // Jooble returns { totalCount, jobs: [] }
         res.json({ jobs: response.data.jobs || [] });
     } catch (err) {
-        console.error("Jooble API Error:", err.message);
-        res.status(500).json({ error: 'Failed to fetch jobs' });
+        console.error("Job Search/Logging Error:", err.message);
+        // We still return jobs if search worked but logging failed
+        if (err.response) { // Jooble error
+            res.status(500).json({ error: 'Failed to fetch jobs' });
+        } else {
+            // Logging failed, but we might still have fetched jobs?? 
+            // Actually if logging fails before axios, we might want to proceed?
+            // Let's re-try the search without logging if it failed
+            try {
+                const response = await axios.post(`https://jooble.org/api/${JOOBLE_API_KEY}`, {
+                    keywords,
+                    location
+                });
+                res.json({ jobs: response.data.jobs || [] });
+            } catch (retryErr) {
+                res.status(500).json({ error: 'Failed to fetch jobs' });
+            }
+        }
     }
 });
 
@@ -916,8 +989,12 @@ app.post('/api/jobs/apply', authenticateToken, async (req, res) => {
 
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        // Record application in DB (Assuming table exists, if not we create it or just notify)
-        // For now, let's focus on the Telegram notification as requested
+        // Record application in DB
+        await db.query(
+            `INSERT INTO ges_schema.applications (user_id, job_id, job_title, company, location) 
+             VALUES ($1, $2, $3, $4, $5)`,
+            [userId, jobId, jobTitle, company, location]
+        );
 
         const message = `
 🚀 <b>New Job Application</b>

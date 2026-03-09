@@ -50,28 +50,32 @@ EXCEPTION
 END $$;
 
 -- Create Saved Jobs Table
-CREATE TABLE IF NOT EXISTS GES_schema.saved_jobs (
+CREATE TABLE IF NOT EXISTS ges_schema.saved_jobs (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES GES_schema.users(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE,
     job_id VARCHAR(100) NOT NULL, -- Assuming job IDs are strings from a catalog
     saved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, job_id)
 );
 
 -- Create Applications Table
-CREATE TABLE IF NOT EXISTS GES_schema.applications (
+CREATE TABLE IF NOT EXISTS ges_schema.applications (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES GES_schema.users(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE CASCADE,
     job_id VARCHAR(100) NOT NULL,
+    job_title VARCHAR(255),
+    company VARCHAR(255),
+    location VARCHAR(255),
     status VARCHAR(50) DEFAULT 'pending',
     applied_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create Job Search Logs Table
-CREATE TABLE IF NOT EXISTS GES_schema.job_search_logs (
+CREATE TABLE IF NOT EXISTS ges_schema.job_search_logs (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES GES_schema.users(id) ON DELETE SET NULL,
+    user_id INTEGER REFERENCES ges_schema.users(id) ON DELETE SET NULL,
     search_query TEXT NOT NULL,
+    location VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 -- Education Table

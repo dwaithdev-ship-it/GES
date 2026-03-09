@@ -400,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    
+
 
     window.removeResume = () => {
         if (!currentUser) return;
@@ -634,7 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (editGeneralBtn && editAccountModal && editAccountForm) {
         editGeneralBtn.addEventListener('click', () => {
             // Pre-fill
-                const displayName = pdFullName ? pdFullName.innerText : 'Your Name';
+            const displayName = pdFullName ? pdFullName.innerText : 'Your Name';
             const firstName = displayName.split(' ')[0];
             const lastName = displayName.split(' ').slice(1).join(' ');
             const email = document.querySelector('.set-email').innerText;
@@ -3200,7 +3200,7 @@ document.addEventListener('DOMContentLoaded', () => {
             jobResultsContainer.scrollIntoView({ behavior: 'smooth' });
 
             try {
-                const response = await api.request('/jobs/search', 'POST', { keywords, location });
+                const response = await api.request('/jobs/search', 'POST', { keywords, location }, localStorage.getItem('token'));
                 jobLoading.style.display = 'none';
 
                 if (response.jobs && response.jobs.length > 0) {
