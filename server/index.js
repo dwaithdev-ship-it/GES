@@ -303,7 +303,10 @@ const ensureProfileSchema = async () => {
         const userCols = {
             google_id: 'VARCHAR(255)',
             facebook_id: 'VARCHAR(255)',
-            password_hash: 'TEXT' // Ensure this can be nullable
+            password_hash: 'TEXT',
+            resume_name: 'TEXT',
+            photo_content: 'TEXT',
+            photo_type: 'VARCHAR(50)'
         };
         for (const [col, type] of Object.entries(userCols)) {
             try {
@@ -429,7 +432,7 @@ app.post('/api/auth/signup', async (req, res) => {
     console.log(`[Signup Attempt] Email: ${email}, Name: ${firstName} ${lastName}, Phone: ${phone}`);
     try {
         // Check if user exists
-        const userCheck = await db.query('SELECT * FROM ges_schema.users WHERE email = $1', [email]);
+        const userCheck = await db.query('SELECT * FROM ges_schema.users WHERE LOWER(email) = LOWER($1)', [email]);
         if (userCheck.rows.length > 0) {
             console.log(`[Signup Failed] User already exists: ${email}`);
             return res.status(400).json({ error: 'User already exists' });
@@ -462,7 +465,7 @@ app.post('/api/auth/signup', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     try {
-        const result = await db.query('SELECT * FROM ges_schema.users WHERE email = $1', [email]);
+        const result = await db.query('SELECT * FROM ges_schema.users WHERE LOWER(email) = LOWER($1)', [email]);
         if (result.rows.length === 0) return res.status(400).json({ error: 'User not found' });
 
         const user = result.rows[0];

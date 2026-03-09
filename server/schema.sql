@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS ges_schema.users (
     current_location VARCHAR(100),
     purpose VARCHAR(100),
     target_country VARCHAR(100),
+    resume_name TEXT,
+    photo_content TEXT,
+    photo_type VARCHAR(50),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -54,6 +57,9 @@ BEGIN
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS current_location VARCHAR(100);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS purpose VARCHAR(100);
     ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS target_country VARCHAR(100);
+    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS resume_name TEXT;
+    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS photo_content TEXT;
+    ALTER TABLE ges_schema.users ADD COLUMN IF NOT EXISTS photo_type VARCHAR(50);
 EXCEPTION
     WHEN others THEN NULL;
 END $$;
