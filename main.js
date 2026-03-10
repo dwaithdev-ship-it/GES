@@ -1217,6 +1217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tests = ["GRE", "IELTS", "TOEFL", "OET", "PTE", "CAE"];
         const languages = ["Hindi", "Urdu", "Telugu", "Punjabi", "Tamil", "Gujarati", "Bengali", "Kannada", "Malayalam", "Marathi", "Oriya", "Spanish", "French", "German", "Italian", "Japanese", "Chinese", "Russian", "Danish", "Swedish", "English"];
         const proficiencies = ["Native speaker", "Proficient", "Advanced", "Intermediate", "Beginner"];
+        const proficienciesNoNative = proficiencies.filter(p => p.toLowerCase() !== "native speaker");
         const visaTypes = ["Student Visa", "Work Visa", "Tourist Visa", "Business Visa", "Visitor Visa", "Dependent Visa", "Permanent Resident", "Citizen"];
 
         const monthSelects = document.querySelectorAll('select[id$="_month"]');
@@ -1387,7 +1388,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const langProfSelects = document.querySelectorAll('#lang_listening, #lang_speaking, #lang_reading, #lang_writing');
         langProfSelects.forEach(select => {
             select.innerHTML = `<option value="">Select ${select.id.split('_')[1]} proficiency</option>`;
-            proficiencies.forEach(p => {
+            const list = select.id === 'lang_speaking' ? proficiencies : proficienciesNoNative;
+            list.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p;
                 opt.innerText = p;
