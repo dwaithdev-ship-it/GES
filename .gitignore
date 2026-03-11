@@ -1,0 +1,13 @@
+node_modules/
+.env
+*.log
+*.pem
+.DS_Store
+dist/
+build/
+.agent/
+.gemini/
+.brain/
+.checkpoint/
+server/serviceAccount.json
+server/.env
