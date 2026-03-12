@@ -6,18 +6,33 @@ const api = {
         const config = { method, headers };
         if (body) config.body = JSON.stringify(body);
 
-        // ALWAYS use relative path or domain-matched path to avoid Mixed Content
-        const fullUrl = (endpoint.startsWith('http')) ? endpoint : `/api${endpoint}`;
+        const isAbsoluteUrl = endpoint.startsWith('http');
+        const normalizedEndpoint = isAbsoluteUrl ? endpoint : (endpoint.startsWith('/') ? endpoint : `/${endpoint}`);
+
+        // Prefer same-origin in production. In local dev, the UI often runs on a different port (e.g. 3000),
+        // so calling `/api/*` would hit the UI dev server and return 404. In that case, call the backend on :5000.
+        const host = window.location.hostname;
+        const port = window.location.port;
+        const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+        const backendPort = '5000';
+        const urlHost = host.includes(':') ? `[${host}]` : host;
+        const apiBase = (isLocalhost && port && port !== backendPort)
+            ? `${window.location.protocol}//${urlHost}:${backendPort}/api`
+            : '/api';
+
+        const fullUrl = isAbsoluteUrl ? endpoint : `${apiBase}${normalizedEndpoint}`;
 
         try {
             let response = await fetch(fullUrl, config);
 
-            // If relative returns 404 or HTML (common on misconfigured proxies), 
-            // try to reach the backend on the same host but port 5000 as a last resort.
-            // ONLY if the protocol matches (HTTPS -> HTTPS)
+            // If the chosen base returns 404 or HTML (common on misconfigured proxies),
+            // try the alternate base once.
             const contentType = response.headers.get('content-type') || '';
             if (response.status === 404 || contentType.includes('text/html')) {
-                const fallbackUrl = `${window.location.protocol}//${window.location.hostname}:5000/api${endpoint}`;
+                const fallbackBase = apiBase === '/api'
+                    ? `${window.location.protocol}//${urlHost}:${backendPort}/api`
+                    : '/api';
+                const fallbackUrl = isAbsoluteUrl ? endpoint : `${fallbackBase}${normalizedEndpoint}`;
                 if (fullUrl !== fallbackUrl) {
                     console.warn(`Primary endpoint ${fullUrl} failed, trying fallback: ${fallbackUrl}`);
                     const fallbackResponse = await fetch(fallbackUrl, config);
@@ -313,37 +328,37 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const renderLanguages = () => {
-        const container = document.getElementById('languagesListContainer');
-        if (!container) return;
-        container.innerHTML = '';
-        const langList = currentUser.languages || [];
-        if (langList.length === 0) {
-            container.innerHTML = '<p style="color:#999;font-size:0.85rem;padding:10px 0;">No languages added yet.</p>';
-            return;
-        }
-        langList.forEach(lang => {
-            const item = document.createElement('div');
-            item.className = 'profile-list-item';
-            item.innerHTML = `
-                <div class="profile-list-item-header">
-                    <div class="profile-list-item-title"><i class="fas fa-language" style="color:#1565c0;margin-right:8px;"></i>${lang.language_name || 'Language'}</div>
-                    <div class="profile-list-item-actions">
-                        <i class="fas fa-pen btn-edit-item" title="Edit" data-section="languages" data-id="${lang.id}" style="color:#ea4335;cursor:pointer;"></i>
-                        <i class="fas fa-trash-alt btn-delete-item" title="Delete" data-section="languages" data-id="${lang.id}" style="color:#999;cursor:pointer;margin-left:12px;"></i>
-                    </div>
-                </div>
-                <div style="margin-top:6px;font-size:0.85rem;color:#555;">Overall: <strong>${lang.overall_proficiency || '--'}</strong></div>
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;">
-                    <div style="text-align:center;background:#e3f2fd;padding:6px 4px;border-radius:6px;"><div style="font-size:0.7rem;color:#777;">Listening</div><div style="font-weight:700;font-size:0.85rem;color:#1565c0;">${lang.listening_proficiency || '--'}</div></div>
-                    <div style="text-align:center;background:#f3e5f5;padding:6px 4px;border-radius:6px;"><div style="font-size:0.7rem;color:#777;">Speaking</div><div style="font-weight:700;font-size:0.85rem;color:#6a1b9a;">${lang.speaking_proficiency || '--'}</div></div>
-                    <div style="text-align:center;background:#e8f5e9;padding:6px 4px;border-radius:6px;"><div style="font-size:0.7rem;color:#777;">Reading</div><div style="font-weight:700;font-size:0.85rem;color:#2e7d32;">${lang.reading_proficiency || '--'}</div></div>
-                    <div style="text-align:center;background:#fff3e0;padding:6px 4px;border-radius:6px;"><div style="font-size:0.7rem;color:#777;">Writing</div><div style="font-weight:700;font-size:0.85rem;color:#e65100;">${lang.writing_proficiency || '--'}</div></div>
-                </div>
-            `;
-            container.appendChild(item);
-        });
-    };
+	    const renderLanguages = () => {
+	        const container = document.getElementById('languagesListContainer');
+	        if (!container) return;
+	        container.innerHTML = '';
+	        const langList = currentUser.languages || [];
+	        if (langList.length === 0) {
+	            container.innerHTML = '<p style="color:#999;font-size:0.85rem;padding:10px 0;">No languages added yet.</p>';
+	            return;
+	        }
+	        langList.forEach(lang => {
+	            const item = document.createElement('div');
+	            item.className = 'profile-list-item';
+	            item.innerHTML = `
+	                <div class="profile-list-item-header">
+	                    <div class="profile-list-item-title"><i class="fas fa-language" style="color:#1565c0;margin-right:8px;"></i>${lang.name || lang.language_name || 'Language'}</div>
+	                    <div class="profile-list-item-actions">
+	                        <i class="fas fa-pen btn-edit-item" title="Edit" data-section="languages" data-id="${lang.id}" style="color:#ea4335;cursor:pointer;"></i>
+	                        <i class="fas fa-trash-alt btn-delete-item" title="Delete" data-section="languages" data-id="${lang.id}" style="color:#999;cursor:pointer;margin-left:12px;"></i>
+	                    </div>
+	                </div>
+	                <div style="margin-top:6px;font-size:0.85rem;color:#555;">Overall: <strong>${lang.overall || lang.overall_proficiency || '--'}</strong></div>
+	                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;">
+	                    <div style="text-align:center;background:#e3f2fd;padding:6px 4px;border-radius:6px;"><div style="font-size:0.7rem;color:#777;">Listening</div><div style="font-weight:700;font-size:0.85rem;color:#1565c0;">${lang.listening || lang.listening_proficiency || '--'}</div></div>
+	                    <div style="text-align:center;background:#f3e5f5;padding:6px 4px;border-radius:6px;"><div style="font-size:0.7rem;color:#777;">Speaking</div><div style="font-weight:700;font-size:0.85rem;color:#6a1b9a;">${lang.speaking || lang.speaking_proficiency || '--'}</div></div>
+	                    <div style="text-align:center;background:#e8f5e9;padding:6px 4px;border-radius:6px;"><div style="font-size:0.7rem;color:#777;">Reading</div><div style="font-weight:700;font-size:0.85rem;color:#2e7d32;">${lang.reading || lang.reading_proficiency || '--'}</div></div>
+	                    <div style="text-align:center;background:#fff3e0;padding:6px 4px;border-radius:6px;"><div style="font-size:0.7rem;color:#777;">Writing</div><div style="font-weight:700;font-size:0.85rem;color:#e65100;">${lang.writing || lang.writing_proficiency || '--'}</div></div>
+	                </div>
+	            `;
+	            container.appendChild(item);
+	        });
+	    };
 
     const renderVisa = () => {
         const container = document.getElementById('visaListContainer');
@@ -585,6 +600,72 @@ document.addEventListener('DOMContentLoaded', () => {
             if (autoModalTimer) clearTimeout(autoModalTimer);
         }
     };
+
+    // Refer Link Modal (Copy website link)
+    const referLinkModal = document.getElementById('referLinkModal');
+    const closeReferLinkModalBtn = document.getElementById('closeReferLinkModal');
+    const referLinkInput = document.getElementById('referLinkInput');
+    const copyReferLinkBtn = document.getElementById('copyReferLinkBtn');
+    const referLinkCopied = document.getElementById('referLinkCopied');
+
+    const getShareableSiteLink = () => {
+        try {
+            const url = new URL(window.location.href);
+            url.hash = '';
+            return url.toString();
+        } catch {
+            return window.location.href.split('#')[0];
+        }
+    };
+
+    const openReferLinkModal = () => {
+        if (!referLinkModal) return;
+        if (referLinkInput) referLinkInput.value = getShareableSiteLink();
+        if (referLinkCopied) referLinkCopied.classList.remove('show');
+        referLinkModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => {
+            try {
+                referLinkInput?.focus();
+                referLinkInput?.select();
+            } catch { }
+        }, 0);
+    };
+
+    const closeReferLinkModal = () => {
+        if (referLinkModal) referLinkModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    };
+
+    window.openReferLinkModal = openReferLinkModal;
+
+    if (closeReferLinkModalBtn) closeReferLinkModalBtn.addEventListener('click', closeReferLinkModal);
+    if (referLinkModal) {
+        referLinkModal.addEventListener('click', (e) => {
+            if (e.target === referLinkModal) closeReferLinkModal();
+        });
+    }
+    if (copyReferLinkBtn) {
+        copyReferLinkBtn.addEventListener('click', async () => {
+            const link = referLinkInput?.value || getShareableSiteLink();
+            try {
+                await navigator.clipboard.writeText(link);
+            } catch (err) {
+                try {
+                    referLinkInput?.focus();
+                    referLinkInput?.select();
+                    document.execCommand('copy');
+                } catch (e) {
+                    console.error('Copy failed:', err);
+                }
+            }
+
+            if (referLinkCopied) {
+                referLinkCopied.classList.add('show');
+                setTimeout(() => referLinkCopied.classList.remove('show'), 1800);
+            }
+        });
+    }
 
     const closeAllModals = () => {
         if (enquiryModal) enquiryModal.classList.remove('active');
@@ -1084,6 +1165,190 @@ document.addEventListener('DOMContentLoaded', () => {
             switchView(tabId);
         });
     });
+
+    // WhatsApp redirects for dummy buttons/links
+    const WHATSAPP_PHONE = '917036665588';
+    const WHATSAPP_DEFAULT_MESSAGE = 'Hi, I want to know more about GES services.';
+
+    const normalizeWhatsAppText = (text) => (text || '').replace(/\s+/g, ' ').trim();
+
+    const buildWhatsAppMessage = (label) => {
+        const text = normalizeWhatsAppText(label);
+        const lower = text.toLowerCase();
+
+        if (!text) return WHATSAPP_DEFAULT_MESSAGE;
+        if (lower.includes('know more') || lower.includes('view all services')) return WHATSAPP_DEFAULT_MESSAGE;
+
+        if (lower === 'migrate') return 'Hi, I want to migrate. Can I get guidance from you?';
+        if (lower === 'work') return 'Hi, I want to work abroad. Can I get guidance from you?';
+        if (lower === 'study') return 'Hi, I want to study abroad. Can I get guidance from you?';
+        if (lower === 'visit') return 'Hi, I want to visit abroad. Can I get guidance from you?';
+
+        return `Hi, I want to know more about ${text}. Can you guide me?`;
+    };
+
+	    const openWhatsApp = (labelOrMessage, { treatAsMessage = false } = {}) => {
+	        const message = treatAsMessage ? normalizeWhatsAppText(labelOrMessage) : buildWhatsAppMessage(labelOrMessage);
+	        const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+	        window.open(url, '_blank', 'noopener');
+	    };
+
+	    const cleanWhatsAppActionLabel = (raw) => {
+	        const text = normalizeWhatsAppText(raw);
+	        return text.replace(/[→›»]/g, '').replace(/\s+/g, ' ').trim();
+	    };
+
+	    const buildCtaPrefillMessage = (label) => {
+	        const clean = cleanWhatsAppActionLabel(label);
+	        if (!clean) return 'Hi, i want to know more. please guide me.';
+	        return `Hi, i want to ${clean.toLowerCase()}. please guide me.`;
+	    };
+
+	    const buildVisaServicesPrefillMessage = (countryLabel) => {
+	        const clean = cleanWhatsAppActionLabel(countryLabel);
+	        if (!clean) return 'Hi, i need Visa Services. please guide me.';
+	        return `Hi, i need Visa Services for ${clean.toLowerCase()}. please guide me.`;
+	    };
+
+	    const migrateCtas = new Set(['apply now', 'get free consultation', 'check eligibility', 'check eligibilty', 'get evaluated', 'view all testimonials', 'view all testimonals']);
+	    const workCtas = new Set(['apply now', 'get free consultation', 'start free assessment']);
+	    const studyCtas = new Set(['apply to study', 'get expert advice']);
+	    const studyCountryCtas = new Set([
+	        'study in canada',
+	        'study in australia',
+	        'study in germany',
+	        'study in uk',
+	        'study in usa',
+	        'study in europe',
+	        'study in ireland',
+	        'study in new zealand'
+	    ]);
+	    const visaButtonCtas = new Set(['apply for visa', 'speak to an expert', 'check visa eligibility']);
+	    const visaCategoryCtas = new Set(['business visa', 'work visa', 'student visa', 'tourist visa', 'family visa']);
+	    const visaCountryCtas = new Set(['the usa', 'canada', 'the uk']);
+	    const coachingCtas = new Set(['book free demo', 'get free counseling', 'get free counselling', 'book my free demo class']);
+
+	    // Make wired cards look clickable
+	    document.querySelectorAll('#study-view .m-process-card').forEach((el) => {
+	        const label = cleanWhatsAppActionLabel(el.textContent).toLowerCase();
+	        if (studyCountryCtas.has(label)) el.style.cursor = 'pointer';
+	    });
+	    document.querySelectorAll('#visa-view .m-process-card').forEach((el) => {
+	        const label = cleanWhatsAppActionLabel(el.querySelector('h4')?.textContent || el.textContent).toLowerCase();
+	        if (visaCategoryCtas.has(label)) el.style.cursor = 'pointer';
+	    });
+	    document.querySelectorAll('#visa-view .m-opp-card').forEach((el) => {
+	        const label = cleanWhatsAppActionLabel(el.querySelector('h4')?.textContent || '').toLowerCase();
+	        if (visaCountryCtas.has(label)) el.style.cursor = 'pointer';
+	    });
+
+	    // Capture clicks for specific CTA buttons/cards so inline onclick handlers never fire
+	    document.addEventListener('click', (e) => {
+	        const stopAndOpen = (message) => {
+	            e.preventDefault();
+	            e.stopImmediatePropagation();
+	            e.stopPropagation();
+	            openWhatsApp(message, { treatAsMessage: true });
+	        };
+
+	        // Visa: country cards (The USA / Canada / The UK)
+	        const visaCountryCard = e.target.closest('#visa-view .m-opp-card');
+	        if (visaCountryCard) {
+	            const country = cleanWhatsAppActionLabel(visaCountryCard.querySelector('h4')?.textContent || '');
+	            if (visaCountryCtas.has(country.toLowerCase())) {
+	                stopAndOpen(buildVisaServicesPrefillMessage(country));
+	                return;
+	            }
+	        }
+
+	        // Visa: category cards (Business/Work/Student/Tourist/Family)
+	        const visaCategoryCard = e.target.closest('#visa-view .m-process-card');
+	        if (visaCategoryCard) {
+	            const label = cleanWhatsAppActionLabel(visaCategoryCard.querySelector('h4')?.textContent || visaCategoryCard.textContent);
+	            if (visaCategoryCtas.has(label.toLowerCase())) {
+	                stopAndOpen(buildCtaPrefillMessage(label));
+	                return;
+	            }
+	        }
+
+	        // Study: "Study in <country>" cards
+	        const studyCountryCard = e.target.closest('#study-view .m-process-card');
+	        if (studyCountryCard) {
+	            const label = cleanWhatsAppActionLabel(studyCountryCard.textContent);
+	            if (studyCountryCtas.has(label.toLowerCase())) {
+	                stopAndOpen(buildCtaPrefillMessage(label));
+	                return;
+	            }
+	        }
+
+	        // View-specific buttons
+	        const ctaButton = e.target.closest('#migrate-view button, #work-view button, #study-view button, #visa-view button, #coaching-view button');
+	        if (!ctaButton) return;
+
+	        const label = cleanWhatsAppActionLabel(ctaButton.textContent);
+	        const lower = label.toLowerCase();
+
+	        if (ctaButton.closest('#migrate-view') && migrateCtas.has(lower)) {
+	            stopAndOpen(buildCtaPrefillMessage(label));
+	            return;
+	        }
+
+	        if (ctaButton.closest('#work-view') && workCtas.has(lower)) {
+	            stopAndOpen(buildCtaPrefillMessage(label));
+	            return;
+	        }
+
+	        if (ctaButton.closest('#study-view') && studyCtas.has(lower)) {
+	            stopAndOpen(buildCtaPrefillMessage(label));
+	            return;
+	        }
+
+	        if (ctaButton.closest('#visa-view') && visaButtonCtas.has(lower)) {
+	            stopAndOpen(buildCtaPrefillMessage(label));
+	            return;
+	        }
+
+	        if (ctaButton.closest('#coaching-view') && coachingCtas.has(lower)) {
+	            stopAndOpen(buildCtaPrefillMessage(label));
+	            return;
+	        }
+	    }, true);
+
+	    // Home hero: Know More button
+	    document.querySelector('.hero-section .btn.btn-red-hero.mt-2')?.addEventListener('click', () => {
+	        openWhatsApp(WHATSAPP_DEFAULT_MESSAGE, { treatAsMessage: true });
+	    });
+
+    // Home hero: Work/Migrate/Study/Visit quick tabs
+    document.querySelectorAll('.hero-location-tabs .loc-tab').forEach((tab) => {
+        tab.addEventListener('click', () => openWhatsApp(tab.textContent));
+    });
+
+    // Dummy anchors in public sections -> WhatsApp
+    const whatsappDummyScopeSelector = '#home-view, #migrate-view, #work-view, #study-view, #visa-view, #coaching-view, #siteFooter';
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[href="#"]');
+        if (!link) return;
+        if (link.classList.contains('tab-link')) return;
+        if (!link.closest(whatsappDummyScopeSelector)) return;
+
+        e.preventDefault();
+        openWhatsApp(link.textContent);
+    });
+
+    // Language proficiency: checkboxes but single-select
+    const langOverallProfGroup = document.getElementById('lang_overall_prof');
+    if (langOverallProfGroup) {
+        langOverallProfGroup.addEventListener('change', (e) => {
+            const changed = e.target;
+            if (!changed || !changed.matches?.('input[type="checkbox"][name="langProf"]')) return;
+            if (!changed.checked) return;
+
+            langOverallProfGroup.querySelectorAll('input[type="checkbox"][name="langProf"]').forEach(cb => {
+                if (cb !== changed) cb.checked = false;
+            });
+        });
+    }
 
     // Global Resume Upload Trigger
     window.triggerResumeUpload = () => {
@@ -1613,15 +1878,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('test_valid_year').value = test.valid_year || '';
     };
 
-    const prefillLanguages = (lang) => {
-        document.getElementById('lang_name').value = lang.language_name || '';
-        const radio = document.querySelector(`input[name="langProf"][value="${lang.overall_proficiency}"]`);
-        if (radio) radio.checked = true;
-        document.getElementById('lang_listening').value = lang.listening_proficiency || '';
-        document.getElementById('lang_speaking').value = lang.speaking_proficiency || '';
-        document.getElementById('lang_reading').value = lang.reading_proficiency || '';
-        document.getElementById('lang_writing').value = lang.writing_proficiency || '';
-    };
+	    const prefillLanguages = (lang) => {
+	        document.getElementById('lang_name').value = lang.name || lang.language_name || '';
+	        document.getElementById('modalLanguages')?.querySelectorAll('input[name="langProf"]').forEach((input) => {
+	            input.checked = false;
+	        });
+	        const overall = lang.overall || lang.overall_proficiency || '';
+	        const radio = document.querySelector(`input[name="langProf"][value="${overall}"]`);
+	        if (radio) radio.checked = true;
+	        document.getElementById('lang_listening').value = lang.listening || lang.listening_proficiency || '';
+	        document.getElementById('lang_speaking').value = lang.speaking || lang.speaking_proficiency || '';
+	        document.getElementById('lang_reading').value = lang.reading || lang.reading_proficiency || '';
+	        document.getElementById('lang_writing').value = lang.writing || lang.writing_proficiency || '';
+	    };
 
     const prefillVisa = (visa) => {
         document.getElementById('visa_type').value = visa.visa_type || '';

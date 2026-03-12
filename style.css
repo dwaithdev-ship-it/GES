@@ -794,6 +794,40 @@ footer {
     margin-bottom: 25px;
 }
 
+.refer-link-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.refer-link-row input {
+    flex: 1;
+    padding: 12px 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.refer-copy-btn {
+    margin-bottom: 0;
+    padding: 12px 20px;
+    font-size: 1rem;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.refer-copy-status {
+    display: none;
+    margin-top: 14px;
+    text-align: center;
+    color: #2e7d32;
+    font-weight: 700;
+}
+
+.refer-copy-status.show {
+    display: block;
+}
+
 .social-login-group {
     display: flex;
     justify-content: center;
@@ -1532,6 +1566,12 @@ input:checked+.toggle-slider:before {
     font-size: 0.95rem;
     color: #333;
     background: #fff;
+}
+
+.modal-form-group input[type="checkbox"],
+.modal-form-group input[type="radio"] {
+    width: auto;
+    padding: 0;
 }
 
 .modal-form-group textarea {

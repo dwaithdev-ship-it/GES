@@ -2,6 +2,7 @@ node_modules/
 .env
 *.log
 *.pem
+.ssh/
 .DS_Store
 dist/
 build/
@@ -11,3 +12,6 @@ build/
 .checkpoint/
 server/serviceAccount.json
 server/.env
+duplicates_backup_*/
+.env
+serviceAccount.json
